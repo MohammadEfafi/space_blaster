@@ -71,8 +71,8 @@ class _MenuButton:
         label: str,
         action: Callable[[], None],
         y: int,
-        width: int = 280,
-        height: int = 54,
+        width: int = 340,     # ← بزرگ‌تر
+        height: int = 60,     # ← بزرگ‌تر
     ) -> None:
         self.label = label
         self.action = action
@@ -225,17 +225,24 @@ class MenuScene(Scene):
         self._spawn_stars(S.FxCfg.STAR_COUNT)
 
         # ---- دکمه‌های منو ----
+        # چیدمان منو — با فاصله‌های بزرگ‌تر برای رزولوشن بالاتر
+        btn_start_y = 430
+        btn_gap = 68
+
         self.buttons: list[_MenuButton] = [
-            _MenuButton("START MISSION", self._start_game, y=S.Window.HEIGHT // 2 + 30),
-            _MenuButton("LEADERBOARD",   self._open_leaderboard, y=S.Window.HEIGHT // 2 + 100),
-            _MenuButton("SETTINGS",      self._open_settings, y=S.Window.HEIGHT // 2 + 170),
-            _MenuButton("QUIT",          self.quit_game,     y=S.Window.HEIGHT // 2 + 240),
+            _MenuButton("START MISSION", self._start_game,       y=btn_start_y),
+            _MenuButton("SELECT SHIP",   self._select_ship,      y=btn_start_y + btn_gap),
+            _MenuButton("LEADERBOARD",   self._open_leaderboard, y=btn_start_y + btn_gap * 2),
+            _MenuButton("QUIT",          self.quit_game,         y=btn_start_y + btn_gap * 3),
         ]
         self.selected_idx = 0
         self.buttons[self.selected_idx].selected = True
 
         # ---- زمان برای انیمیشن عنوان ----
         self._t = 0.0
+
+    def _select_ship(self) -> None:
+        self.go_to(S.SceneName.SHIP_SELECT.value)
 
     def on_exit(self) -> None:
         self.stars.clear()
@@ -372,24 +379,24 @@ class MenuScene(Scene):
         cx = S.Window.WIDTH // 2
         cy = 130
 
-        # پالس
+        # ---- پالس ----
         pulse = 1.0 + 0.04 * math.sin(self._t * 2.4)
 
-        # متن اصلی
+        # ---- متن اصلی ----
         img = self.font_title.render(S.Window.TITLE, True, S.Palette.MENU_TITLE)
         w = int(img.get_width() * pulse)
         h = int(img.get_height() * pulse)
         img_scaled = pygame.transform.smoothscale(img, (w, h))
         rect = img_scaled.get_rect(center=(cx, cy))
 
-        # هاله (چند لایه با آلفای کم)
-        for layer in range(4, 0, -1):
+        # ---- هاله (کم‌تر از قبل، تمیزتر) ----
+        for layer in range(3, 0, -1):
             glow_img = pygame.transform.smoothscale(
-                img, (w + layer * 12, h + layer * 12)
+                img, (w + layer * 8, h + layer * 8)
             )
             glow_surf = pygame.Surface(glow_img.get_size(), pygame.SRCALPHA)
             glow_surf.blit(glow_img, (0, 0))
-            glow_surf.set_alpha(28 - layer * 6)
+            glow_surf.set_alpha(22 - layer * 6)
             surface.blit(
                 glow_surf,
                 glow_surf.get_rect(center=(cx, cy)),
@@ -398,19 +405,25 @@ class MenuScene(Scene):
 
         surface.blit(img_scaled, rect)
 
-        # زیرعنوان
-        sub_img = self.font_sub.render("DEFEND • SURVIVE • ASCEND", True, S.Palette.MENU_HINT)
-        sub_rect = sub_img.get_rect(center=(cx, cy + 70))
+        # ---- زیرعنوان: با فاصله‌ی بیشتر ----
+        sub_y = cy + h // 2 + 40           # ← فاصله از لبه‌ی پایین عنوان
+        sub_img = self.font_sub.render(
+            "DEFEND  •  SURVIVE  •  ASCEND", True, S.Palette.MENU_HINT,
+        )
+        sub_rect = sub_img.get_rect(center=(cx, sub_y))
         surface.blit(sub_img, sub_rect)
 
-        # خط تزئینی زیر عنوان
-        line_w = 320
-        line_y = cy + 100
+        # ---- خط تزئینی: با فاصله‌ی مناسب ----
+        line_w = 360
+        line_y = sub_y + 36
         for i in range(line_w):
             t = i / line_w
             a = int(180 * math.sin(math.pi * t))
             x = cx - line_w // 2 + i
-            pygame.draw.line(surface, (*S.Palette.MENU_TITLE, a), (x, line_y), (x, line_y + 1))
+            pygame.draw.line(
+                surface, (*S.Palette.MENU_TITLE, a),
+                (x, line_y), (x, line_y + 1),
+            )
 
     # ── پانویس ──
     def _draw_footer(self, surface: pygame.Surface) -> None:
@@ -432,8 +445,7 @@ class MenuScene(Scene):
         self.go_to(S.SceneName.GAMEPLAY.value)
 
     def _open_leaderboard(self) -> None:
-        # تا زمانی که صحنه‌ی Leaderboard را نساخته‌ایم، پیام موقت نشان می‌دهیم
-        print("[Menu] Leaderboard not implemented yet.")
+        self.go_to(S.SceneName.LEADERBOARD.value)
 
     def _open_settings(self) -> None:
         print("[Menu] Settings not implemented yet.")

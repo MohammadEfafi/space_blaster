@@ -36,7 +36,6 @@ import pygame
 from core import settings as S
 from entities.bullet import Bullet, BulletKind
 from entities.enemies import Enemy, EnemyFactory, EnemyKind
-from entities.player import Player
 from entities.powerup import Powerup, PowerupKind
 from scenes.base import Scene
 from systems.audio import AudioSystem, Bus
@@ -45,6 +44,8 @@ from systems.collision import CollisionSystem
 from systems.particles import ParticleKind, ParticleSystem
 from systems.spawner import Spawner
 from ui.hud import HUD
+from entities.player import Player, build_ship
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -81,7 +82,8 @@ class GameplayScene(Scene):
         self.hud.set_show_fps(S.Debug.SHOW_FPS)
 
         # ---- موجودیت‌ها ----
-        self.player: Player = Player(self)
+        ship_key = getattr(self.game, "selected_ship", "phantom")
+        self.player: Player = build_ship(ship_key, self)
         self.enemies: list[Enemy] = []
         self.bullets: list[Bullet] = []
         self.powerups: list[Powerup] = []
@@ -99,7 +101,7 @@ class GameplayScene(Scene):
         self._shoot_was_held: bool = False
 
         # ---- HUD init ----
-        self.hud.set_hp(self.player.hp, S.PlayerCfg.MAX_HP)
+        self.hud.set_hp(self.player.hp, self.player.MAX_HP)
         self.hud.set_score(0)
         self.hud.set_wave(0)
 
@@ -166,16 +168,18 @@ class GameplayScene(Scene):
     # ─────────────────────────────────────────────────────────────────────
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        # ---- Pause ----
         if event.type == pygame.KEYDOWN:
+            # ---- Pause ----
             if event.key in S.Keys.PAUSE:
                 self._push_pause()
                 return
-
-        # ---- شلیک تک‌ضربه ----
-        # (نگه‌داشتن Space به‌صورت پیوسته در update انجام می‌شود)
-        if event.type == pygame.KEYDOWN and event.key in S.Keys.SHOOT:
-            self._handle_shoot()
+            # ---- بازگشت به منو ----
+            if event.key in S.Keys.QUIT:  # ESC
+                self._go_to_menu()
+                return
+            # ---- شلیک ----
+            if event.key in S.Keys.SHOOT:
+                self._handle_shoot()
 
     def _handle_shoot(self) -> None:
         if self.game_over_pending or self.paused_internal:
@@ -250,7 +254,7 @@ class GameplayScene(Scene):
         # ---- HUD ----
         self.hud.set_score(self.score)
         self.hud.set_wave(self.spawner.current_wave)
-        self.hud.set_hp(self.player.hp, S.PlayerCfg.MAX_HP)
+        self.hud.set_hp(self.player.hp, self.player.MAX_HP)
 
         # نوار Power-Up
         if self.player.powerup_time > 0:
@@ -449,8 +453,8 @@ class GameplayScene(Scene):
         self.paused_internal = True
         if self.audio:
             self.audio.pause_music()
-        # با استفاده از SceneManager، PauseScene روی Gameplay قرار می‌گیرد
-        self.go_to(S.SceneName.PAUSE.value)
+        # push روی Gameplay — بعد از pop، خودکار resume می‌شه
+        self.game.scenes.push(S.SceneName.PAUSE.value)
 
     def on_resume(self) -> None:
         """وقتی از Pause برگشتیم."""
@@ -475,5 +479,11 @@ class GameplayScene(Scene):
             self.audio.stop_music(fade_ms=400)
         self.go_to(S.SceneName.GAME_OVER.value)
 
+
+    def _go_to_menu(self) -> None:
+        """بازگشت فوری به منوی اصلی."""
+        if self.audio:
+            self.audio.stop_music(fade_ms=300)
+        self.go_to(S.SceneName.MENU.value)
 
 __all__ = ["GameplayScene"]

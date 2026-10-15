@@ -61,14 +61,19 @@ class Game:
 
     def __init__(self) -> None:
         # ---- راه‌اندازی pygame ----
-        # این کار باید پیش از هر فراخوانی pygame دیگری انجام شود.
         pygame.init()
         pygame.display.set_caption(S.Window.TITLE)
 
         # ---- پنجره ----
-        flags = 0
+        # pygame.SCALED: رزولوشن منطقی (900x650) رو حفظ می‌کنه ولی تصویر
+        # رو خودکار به اندازه‌ی پنجره‌ی واقعی مقیاس می‌ده. این یعنی:
+        #   • همه‌ی صحنه‌ها همچنان در مختصات 900x650 کار می‌کنن
+        #   • ماوس هم خودکار به همون مختصات تبدیل می‌شه
+        #   • در حالت fullscreen، تصویر کل صفحه رو پر می‌کنه (بدون حاشیه)
+        flags = pygame.SCALED
         if S.Window.RESIZABLE:
             flags |= pygame.RESIZABLE
+
         try:
             self.screen: pygame.Surface = pygame.display.set_mode(
                 (S.Window.WIDTH, S.Window.HEIGHT),
@@ -76,11 +81,13 @@ class Game:
                 vsync=S.Window.VSYNC,
             )
         except pygame.error:
-            # برخی درایورها از vsync پشتیبانی نمی‌کنند؛ در این حالت بدون vsync
             self.screen = pygame.display.set_mode(
                 (S.Window.WIDTH, S.Window.HEIGHT),
                 flags,
             )
+
+        # ---- وضعیت تمام‌صفحه ----
+        self._is_fullscreen: bool = False
 
         # ---- ساعت و زمان ----
         self.clock: pygame.time.Clock = pygame.time.Clock()
@@ -91,6 +98,9 @@ class Game:
 
         # ---- وضعیت اجرا ----
         self.running: bool = True
+
+        # ---- انتخاب سفینه‌ی پیش‌فرض ----
+        self.selected_ship: str = "phantom"
 
         # ---- مدیر صحنه‌ها ----
         self.scenes: SceneManager = SceneManager(self)
@@ -109,44 +119,32 @@ class Game:
     # ─────────────────────────────────────────────────────────────────────
     #  ثبت صحنه‌ها
     # ─────────────────────────────────────────────────────────────────────
-    #  تمام صحنه‌ها اینجا مونتاژ می‌شوند. اضافه کردن صحنه‌ی جدید =
-    #  یک خط register. import ها داخل همین متد انجام می‌شوند تا از
-    #  import چرخشی در بالای فایل جلوگیری شود.
-    # ─────────────────────────────────────────────────────────────────────
 
     def _register_scenes(self) -> None:
         from scenes.menu import MenuScene
+        from scenes.ship_select import ShipSelectScene
         from scenes.gameplay import GameplayScene
         from scenes.pause import PauseScene
         from scenes.gameover import GameOverScene
+        from scenes.leaderboard import LeaderboardScene
 
-        self.scenes.register(S.SceneName.MENU.value,      MenuScene(self))
-        self.scenes.register(S.SceneName.GAMEPLAY.value,  GameplayScene(self))
-        self.scenes.register(S.SceneName.PAUSE.value,     PauseScene(self))
-        self.scenes.register(S.SceneName.GAME_OVER.value, GameOverScene(self))
+        self.scenes.register(S.SceneName.MENU.value,        MenuScene(self))
+        self.scenes.register(S.SceneName.SHIP_SELECT.value, ShipSelectScene(self))
+        self.scenes.register(S.SceneName.GAMEPLAY.value,    GameplayScene(self))
+        self.scenes.register(S.SceneName.PAUSE.value,       PauseScene(self))
+        self.scenes.register(S.SceneName.GAME_OVER.value,   GameOverScene(self))
+        self.scenes.register(S.SceneName.LEADERBOARD.value, LeaderboardScene(self))
 
     # ─────────────────────────────────────────────────────────────────────
     #  حلقه‌ی اصلی
     # ─────────────────────────────────────────────────────────────────────
 
     def run(self) -> None:
-        """
-        اجرای حلقه‌ی اصلی بازی.
-
-        مراحل هر فریم:
-            ①  محاسبه‌ی dt (delta time) و محدود کردن FPS
-            ②  پردازش رویدادهای pygame (QUIT، KEYDOWN، …)
-            ③  به‌روزرسانی منطق صحنه‌ی فعلی با dt
-            ④  پاک کردن صفحه
-            ⑤  رندر صحنه‌ی فعلی
-            ⑥  اعمال تغییرات صف‌شده‌ی صحنه‌ها
-            ⑦  نمایش نتیجه روی صفحه
-        """
+        """اجرای حلقه‌ی اصلی بازی."""
         try:
             while self.running:
                 # ① زمان
                 raw_ms = self.clock.tick(S.Window.FPS)
-                # محدودکردن dt برای جلوگیری از پرش‌های بزرگ (window drag, lag)
                 self.dt = min(raw_ms / 1000.0, 0.05)
                 self.total_time += self.dt
                 self.frame_count += 1
@@ -157,6 +155,10 @@ class Game:
                     if event.type == pygame.QUIT:
                         self.running = False
                         break
+                    # ---- F11 = تاگل تمام‌صفحه ----
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
+                        self._toggle_fullscreen()
+                        continue
                     self.scenes.handle_event(event)
 
                 if not self.running:
@@ -181,10 +183,8 @@ class Game:
                 pygame.display.flip()
 
         except KeyboardInterrupt:
-            # خروج تمیز با Ctrl+C در کنسول
             print("\n[Game] Interrupted by user.")
         except Exception:
-            # در صورت وقوع خطای غیرمنتظره، اطلاعات مفید چاپ می‌شود
             print("\n[Game] Unhandled exception in main loop:")
             traceback.print_exc()
         finally:
@@ -195,10 +195,7 @@ class Game:
     # ─────────────────────────────────────────────────────────────────────
 
     def _update_fps(self, raw_ms: int) -> None:
-        """
-        به‌روزرسانی نرم FPS برای نمایش. مقدار نمایشی هر ۰.۲۵ ثانیه
-        یک‌بار به‌روز می‌شود تا چشم را اذیت نکند.
-        """
+        """به‌روزرسانی نرم FPS برای نمایش."""
         self._fps_accum += raw_ms / 1000.0
         self._fps_frames += 1
         if self._fps_accum >= 0.25:
@@ -215,22 +212,51 @@ class Game:
         img = self._fps_font.render(text, True, S.Palette.HUD_ACCENT)
         rect = img.get_rect()
         rect.topright = (S.Window.WIDTH - 12, 10)
-        # پس‌زمینه‌ی نیمه‌شفاف برای خوانایی بیشتر
         bg = pygame.Surface((rect.width + 10, rect.height + 6), pygame.SRCALPHA)
         bg.fill((0, 0, 0, 110))
         surface.blit(bg, (rect.x - 5, rect.y - 3))
         surface.blit(img, rect)
 
     # ─────────────────────────────────────────────────────────────────────
+    #  تاگل تمام‌صفحه (F11)
+    # ─────────────────────────────────────────────────────────────────────
+
+    def _toggle_fullscreen(self) -> None:
+        """
+        تاگل بین حالت پنجره‌ای و تمام‌صفحه.
+
+        نکته‌ی کلیدی: حتماً pygame.SCALED باید در flags باشه. این باعث
+        می‌شه رزولوشن منطقی (900x650) حفظ بشه ولی تصویر خودکار به اندازه‌ی
+        صفحه‌ی واقعی مقیاس داده بشه. بدون SCALED، تصویر فقط گوشه‌ی
+        بالا-چپ می‌مونه.
+        """
+        self._is_fullscreen = not self._is_fullscreen
+
+        # SCALED باید همیشه باشه — چه در حالت fullscreen، چه windowed
+        flags = pygame.SCALED
+        if self._is_fullscreen:
+            flags |= pygame.FULLSCREEN
+        else:
+            flags |= pygame.RESIZABLE
+
+        try:
+            self.screen = pygame.display.set_mode(
+                (S.Window.WIDTH, S.Window.HEIGHT),
+                flags,
+                vsync=S.Window.VSYNC,
+            )
+        except pygame.error:
+            self.screen = pygame.display.set_mode(
+                (S.Window.WIDTH, S.Window.HEIGHT),
+                flags,
+            )
+
+    # ─────────────────────────────────────────────────────────────────────
     #  خروج تمیز
     # ─────────────────────────────────────────────────────────────────────
 
     def _shutdown(self) -> None:
-        """
-        خروج تمیز از بازی.
-        پشته‌ی صحنه‌ها را خالی می‌کند، pygame را می‌بندد و از فرآیند
-        خارج می‌شود. تمام منابع به شکل صحیح آزاد می‌شوند.
-        """
+        """خروج تمیز از بازی."""
         print("[Game] Shutting down…")
         try:
             self.scenes.clear()
@@ -242,7 +268,6 @@ class Game:
         except Exception:
             pass
         print("[Game] Bye 👋")
-        # در حالت اجرای معمولی (نه داخل IPython/Jupyter) از فرآیند خارج شو
         if not _is_interactive():
             sys.exit(0)
 

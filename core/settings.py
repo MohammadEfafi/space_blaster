@@ -45,14 +45,12 @@ SAVE_DIR:  Final[Path] = ROOT_DIR / "saves"
 # ═══════════════════════════════════════════════════════════════════════════
 
 class Window:
-    """پیکربندی پنجره‌ی اصلی بازی."""
     TITLE:     Final[str]  = "SPACE BLASTER"
-    WIDTH:     Final[int]  = 900
-    HEIGHT:    Final[int]  = 650
+    WIDTH:     Final[int]  = 1280  
+    HEIGHT:    Final[int]  = 800    
     FPS:       Final[int]  = 60
     VSYNC:     Final[int]  = 1
-    RESIZABLE: Final[bool] = False
-
+    RESIZABLE: Final[bool] = True    
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  ③  پالت رنگ (Palette)
@@ -121,7 +119,7 @@ class Palette:
 
 class FontCfg:
     """نام خانواده و اندازه‌های استاندارد فونت."""
-    FAMILY: Final[str] = "consolas"   # بعداً می‌توانی فایل .ttf بدهی
+    FAMILY: Final[str] = "bahnschrift"   # بعداً می‌توانی فایل .ttf بدهی
     TINY:   Final[int] = 14
     SMALL:  Final[int] = 18
     NORMAL: Final[int] = 22
@@ -246,6 +244,7 @@ class PowerupCfg:
 class SceneName(str, Enum):
     """از Enum استفاده می‌کنیم تا از غلط‌املایی و رشته‌های جادویی جلوگیری شود."""
     MENU        = "menu"
+    SHIP_SELECT  = "ship_select"
     GAMEPLAY    = "gameplay"
     PAUSE       = "pause"
     GAME_OVER   = "game_over"
