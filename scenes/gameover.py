@@ -35,10 +35,7 @@ from __future__ import annotations
 import json
 import math
 import random
-import time
 from dataclasses import dataclass
-from datetime import datetime
-from pathlib import Path
 from typing import Callable, Optional
 
 import pygame
@@ -46,94 +43,13 @@ import pygame
 from core import settings as S
 from scenes.base import Scene
 from systems.audio import AudioSystem
+from systems.scores import HighScoreStore
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  مدیریت فایل رکورد (High Score Persistence)
 # ═══════════════════════════════════════════════════════════════════════════
 
-class HighScoreStore:
-    """
-    ذخیره و بارگذاری رکوردها از/به یک فایل JSON.
-
-    اگر فایل نباشد یا خوانا نباشد، مقادیر پیش‌فرض استفاده می‌شوند.
-    ذخیره‌سازی خطا-tolerant است: خطا باعث کرش نمی‌شود، فقط لاگ می‌شود.
-    """
-
-    DEFAULT: dict = {
-        "high_score": 0,
-        "best_wave": 0,
-        "total_games": 0,
-        "last_played": "",
-    }
-
-    def __init__(self, path: Optional[Path] = None) -> None:
-        if path is None:
-            path = S.SAVE_DIR / "highscore.json"
-        self.path: Path = Path(path)
-        self.data: dict = dict(self.DEFAULT)
-        self._load()
-
-    def _load(self) -> None:
-        try:
-            if self.path.is_file():
-                with self.path.open("r", encoding="utf-8") as f:
-                    loaded = json.load(f)
-                if isinstance(loaded, dict):
-                    for k, v in loaded.items():
-                        if k in self.DEFAULT:
-                            self.data[k] = v
-        except Exception as exc:
-            print(f"[HighScore] Failed to load '{self.path}': {exc}")
-
-    def save(self) -> None:
-        try:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            with self.path.open("w", encoding="utf-8") as f:
-                json.dump(self.data, f, ensure_ascii=False, indent=2)
-        except Exception as exc:
-            print(f"[HighScore] Failed to save '{self.path}': {exc}")
-
-    # ── API ──
-
-    def submit(
-        self,
-        score: int,
-        wave: int,
-    ) -> tuple[bool, bool]:
-        """
-        ثبت یک بازی جدید.
-
-        برمی‌گرداند: (new_high_score, new_best_wave)
-        """
-        new_high = False
-        new_best_wave = False
-
-        if score > self.data.get("high_score", 0):
-            self.data["high_score"] = int(score)
-            new_high = True
-
-        if wave > self.data.get("best_wave", 0):
-            self.data["best_wave"] = int(wave)
-            new_best_wave = True
-
-        self.data["total_games"] = int(self.data.get("total_games", 0)) + 1
-        self.data["last_played"] = datetime.now().isoformat(timespec="seconds")
-
-        self.save()
-        return new_high, new_best_wave
-
-    @property
-    def high_score(self) -> int:
-        return int(self.data.get("high_score", 0))
-
-    @property
-    def best_wave(self) -> int:
-        return int(self.data.get("best_wave", 0))
-
-    @property
-    def total_games(self) -> int:
-        return int(self.data.get("total_games", 0))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -299,14 +215,24 @@ class GameOverScene(Scene):
         # ---- آمار ----
         self.score = int(getattr(self.game, "last_score", 0))
         self.wave = int(getattr(self.game, "last_wave", 0))
+        ship_key = getattr(self.game, "selected_ship", "phantom")
 
-        # ---- رکورد ----
+        # ---- ثبت در جدول امتیازات ----
         self.store = HighScoreStore()
         self._prev_high = self.store.high_score
-        self.is_new_high, self.is_new_best_wave = self.store.submit(self.score, self.wave)
+
+        # ثبت بازی جدید (برمی‌گردونه: رکورد جدید؟ رتبه‌ی چندم؟)
+        self.is_new_high, self.rank = self.store.submit(
+            self.score, self.wave, ship_key,
+        )
+
+        # آمار نمایشی
         self.high_score = self.store.high_score
         self.best_wave = self.store.best_wave
         self.total_games = self.store.total_games
+
+        # برای اینکه بقیه‌ی کد نشکنه
+        self.is_new_best_wave = False
 
         # ---- زمان‌بندی ----
         self._t: float = 0.0
@@ -573,6 +499,16 @@ class GameOverScene(Scene):
                     special_flags=pygame.BLEND_RGBA_ADD,
                 )
             surface.blit(sub_scaled, sub_rect)
+            
+            # ---- نمایش رتبه ----
+        if alpha > 0.5 and 1 <= self.rank <= 10:
+            rank_y = cy + 105
+            rank_color = (255, 210, 60) if self.rank == 1 else S.Palette.HUD_ACCENT
+            rank_text = f"RANK #{self.rank}  on the leaderboard"
+            rank_img = self.font_small.render(rank_text, True, rank_color)
+            if alpha < 1.0:
+                rank_img.set_alpha(int(255 * alpha))
+            surface.blit(rank_img, rank_img.get_rect(center=(cx, rank_y)))
 
     # ── آمار ──
     def _draw_stats(self, surface: pygame.Surface) -> None:

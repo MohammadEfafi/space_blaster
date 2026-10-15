@@ -367,13 +367,6 @@ class HUD:
         font = self._get_font(S.FontCfg.LARGE, bold=True)
         text = f"{int(self.score_display):,}"
         img = font.render(text, True, S.Palette.WHITE)
-        # هاله‌ی نرم
-        self._draw_text_glow(
-            surface, text, font,
-            (x, y + img_label.get_height() + 2),
-            S.Palette.HUD_ACCENT,
-            glow=1,
-        )
         surface.blit(img, (x, y + img_label.get_height() + 2))
 
         # High Score (زیر امتیاز جاری)
@@ -432,8 +425,8 @@ class HUD:
     def _draw_hearts(self, surface: pygame.Surface) -> None:
         if not self._hearts:
             return
-        size = 22
-        gap = 6
+        size = 26
+        gap = 10
         total_w = len(self._hearts) * size + (len(self._hearts) - 1) * gap
         x0 = S.Window.WIDTH - self.PADDING - total_w
         y = self.PADDING + 4
@@ -491,18 +484,6 @@ class HUD:
             self._draw_heart_shape(tmp, local_cx, local_cy, r, color, filled=filled)
             surface.blit(tmp, (cx - local_cx, cy - local_cy))
             return
-
-        if glowed and filled:
-            glow_surf = pygame.Surface((r * 6, r * 6), pygame.SRCALPHA)
-            for rr in range(r * 3, 0, -2):
-                a = int(50 * (1 - rr / (r * 3)))
-                if a <= 0:
-                    continue
-                pygame.draw.circle(glow_surf, (*color, a), (r * 3, r * 3), rr)
-            surface.blit(
-                glow_surf, (cx - r * 3, cy - r * 3),
-                special_flags=pygame.BLEND_RGBA_ADD,
-            )
 
         self._draw_heart_shape(surface, cx, cy, r, color, filled=filled)
 
