@@ -46,7 +46,7 @@ from entities.entity import Entity
 
 if TYPE_CHECKING:
     from entities.bullet import Bullet
-    from entities.enemy import Enemy
+    from entities.enemies import Enemy
     from entities.player import Player
     from entities.powerup import Powerup
     from scenes.gameplay import GameplayScene 

@@ -35,7 +35,7 @@ import pygame
 
 from core import settings as S
 from entities.bullet import Bullet, BulletKind
-from entities.enemy import Enemy, EnemyFactory, EnemyKind
+from entities.enemies import Enemy, EnemyFactory, EnemyKind
 from entities.player import Player
 from entities.powerup import Powerup, PowerupKind
 from scenes.base import Scene

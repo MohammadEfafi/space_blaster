@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 import pygame
 
 from core import settings as S
-from entities.enemy import Enemy, EnemyFactory
+from entities.enemies import Enemy, EnemyFactory
 
 if TYPE_CHECKING:
     from scenes.gameplay import GameplayScene
