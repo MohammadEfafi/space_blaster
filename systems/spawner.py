@@ -102,19 +102,15 @@ class WaveAnnouncement:
         if not self.active:
             return
 
-        # ---- alpha در ورود و خروج ----
+        # ---- محاسبه‌ی alpha ----
         t = self.t / self.duration
-        # نیمه‌ی اول: ورود نرم، نیمه‌ی دوم: محو شدن
-        if t < 0.25:
-            a = t / 0.25
+        if t < 0.2:
+            a = t / 0.2
         elif t < 0.75:
             a = 1.0
         else:
             a = 1.0 - (t - 0.75) / 0.25
         a = max(0.0, min(1.0, a))
-
-        # ---- پالس ----
-        pulse = 1.0 + 0.05 * math.sin(self.t * 8.0)
 
         # ---- رنگ ----
         if self.is_boss:
@@ -122,46 +118,71 @@ class WaveAnnouncement:
             text = f"!!  BOSS WAVE {self.wave}  !!"
         else:
             color = S.Palette.HUD_ACCENT
-            text = f"WAVE {self.wave}"
+            text = f"WAVE {self.wave:02d}"
 
         cx = S.Window.WIDTH // 2
-        cy = S.Window.HEIGHT // 2 - 40
+        cy = S.Window.HEIGHT // 2 - 60
 
-        # ---- متن با اسکیل ----
+        # ---- پس‌زمینه‌ی پنل ----
+        panel_w = 520
+        panel_h = 100
+        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        
+        # گرادیان تیره
+        for y in range(panel_h):
+            edge_dist = min(y, panel_h - y)
+            alpha_factor = min(1.0, edge_dist / 20.0)
+            row_alpha = int(180 * alpha_factor * a)
+            if row_alpha <= 0:
+                continue
+            pygame.draw.line(
+                panel, (5, 10, 20, row_alpha),
+                (0, y), (panel_w, y),
+            )
+        
+        # گوشه‌ها (برشخورده)
+        pygame.draw.polygon(panel, (*color, int(200 * a)), [
+            (0, panel_h // 2), (30, 0), (panel_w - 30, 0), (panel_w, panel_h // 2),
+            (panel_w - 30, panel_h), (30, panel_h),
+        ], 2)
+
+        panel_rect = panel.get_rect(center=(cx, cy))
+        surface.blit(panel, panel_rect.topleft)
+
+        # ---- متن ----
+        pulse = 1.0 + 0.05 * math.sin(self.t * 8.0)
         img = font_big.render(text, True, color)
+        
         w = int(img.get_width() * pulse)
         h = int(img.get_height() * pulse)
         img_scaled = pygame.transform.smoothscale(img, (w, h))
+        
         if a < 1.0:
             img_scaled.set_alpha(int(255 * a))
 
         rect = img_scaled.get_rect(center=(cx, cy))
 
-        # ---- هاله‌ی رنگی ----
-        if a > 0.1:
-            for layer in range(3, 0, -1):
-                glow = pygame.transform.smoothscale(img, (w + layer * 14, h + layer * 14))
-                glow_surf = pygame.Surface(glow.get_size(), pygame.SRCALPHA)
-                glow_surf.blit(glow, (0, 0))
-                glow_surf.set_alpha(int(30 * a))
-                surface.blit(
-                    glow_surf,
-                    glow_surf.get_rect(center=(cx, cy)),
-                    special_flags=pygame.BLEND_RGBA_ADD,
-                )
+        # ---- سایه‌ی متنی (Outline) برای خوانایی ----
+        outline = font_big.render(text, True, (0, 0, 0))
+        for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, 2), (-2, 2), (2, -2)]:
+            shadow = pygame.transform.smoothscale(
+                outline, 
+                (int(w * 1.02), int(h * 1.02))
+            )
+            if a < 1.0:
+                shadow.set_alpha(int(255 * a))
+            surface.blit(shadow, (rect.x - 1 + dx, rect.y - 1 + dy))
+
+        # ---- خطوط تزئینی کناری ----
+        line_w = int(180 * a)
+        if line_w > 5:
+            line_y = cy + h // 2 + 15
+            for sign in (-1, 1):
+                x1 = cx + sign * (w // 2 + 20)
+                x2 = cx + sign * (w // 2 + 20 + line_w)
+                pygame.draw.line(surface, (*color, int(200 * a)), (x1, line_y), (x2, line_y), 2)
 
         surface.blit(img_scaled, rect)
-
-        # ---- خط تزئینی زیر متن ----
-        line_w = int(320 * min(1.0, a * 1.4))
-        line_y = cy + 40
-        if line_w > 4:
-            x1 = cx - line_w // 2
-            x2 = cx + line_w // 2
-            pygame.draw.line(surface, color, (x1, line_y), (x2, line_y), 2)
-            # نقطه‌های درخشان
-            pygame.draw.circle(surface, color, (x1, line_y), 3)
-            pygame.draw.circle(surface, color, (x2, line_y), 3)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
