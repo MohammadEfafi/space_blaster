@@ -427,7 +427,7 @@ class MenuScene(Scene):
 
     # ── پانویس ──
     def _draw_footer(self, surface: pygame.Surface) -> None:
-        hint = "↑↓ select   •   ENTER confirm   •   ESC quit"
+        hint = "UP/DOWN  select    |    ENTER  confirm    |    ESC  quit"
         img = self.font_small.render(hint, True, S.Palette.GREY)
         rect = img.get_rect(center=(S.Window.WIDTH // 2, S.Window.HEIGHT - 26))
         surface.blit(img, rect)

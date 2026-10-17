@@ -350,12 +350,12 @@ class ShipSelectScene(Scene):
         # ---- دکمه‌ها ----
         cx = W // 2
         self.btn_back = _Button(
-            "◀  BACK", self._go_back,
+            "BACK", self._go_back,
             cx - BTN_W // 2 - BTN_GAP, BTN_Y,
             accent=(120, 140, 180),
         )
         self.btn_select = _Button(
-            "SELECT  ▶", self._confirm_select,
+            "SELECT", self._confirm_select,
             cx + BTN_W // 2 + BTN_GAP, BTN_Y,
             accent=info.color,
         )
@@ -702,7 +702,7 @@ class ShipSelectScene(Scene):
 
     # ── راهنما ──
     def _draw_hint(self, surface: pygame.Surface) -> None:
-        hint = "← →  browse  ·  ENTER  select  ·  ESC  back"
+        hint = "LEFT/RIGHT  browse    |    ENTER  select    |    ESC  back"
         img = self.font_hint.render(hint, True, (120, 140, 170))
         surface.blit(img, img.get_rect(center=(W // 2, HINT_Y)))
 

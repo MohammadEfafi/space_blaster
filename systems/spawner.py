@@ -119,7 +119,7 @@ class WaveAnnouncement:
         # ---- رنگ ----
         if self.is_boss:
             color = S.Palette.ENEMY_BOSS
-            text = f"⚠ BOSS WAVE {self.wave} ⚠"
+            text = f"!!  BOSS WAVE {self.wave}  !!"
         else:
             color = S.Palette.HUD_ACCENT
             text = f"WAVE {self.wave}"

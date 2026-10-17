@@ -123,9 +123,9 @@ class _BackButton:
             surface.blit(glow, rect.topleft)
 
         text_color = S.Palette.WHITE if self.hovered else S.Palette.HUD_TEXT
-        img = font.render("◀  BACK TO MENU", True, text_color)
+        img = font.render("BACK TO MENU", True, text_color)
         tr = img.get_rect(center=rect.center)
-        shadow = font.render("◀  BACK TO MENU", True, (0, 0, 0))
+        shadow = font.render("BACK TO MENU", True, (0, 0, 0))
         surface.blit(shadow, (tr.x + 2, tr.y + 2))
         surface.blit(img, tr)
 
