@@ -213,7 +213,9 @@ class Spawner:
         spawn_enemy: Optional[Callable[[Enemy], None]] = None,
         boss_every: int = 5,
         max_wave: int = 0,
+        boss_min_wave: int = 4,
     ) -> None:
+        self.boss_min_wave: int = boss_min_wave
         self.scene = scene
         self.factory = EnemyFactory(scene)
 
@@ -289,7 +291,12 @@ class Spawner:
         return max(0.12, base - speedup)
 
     def _is_boss_wave(self, wave: int) -> bool:
-        return self.boss_every > 0 and wave > 0 and wave % self.boss_every == 0
+        """موج باس با شانس رندوم — متعادل."""
+        if wave < self.boss_min_wave:
+            return False
+        # شانس کمتر: 25% در موج 5، تدریجاً بیشتر
+        chance = min(0.6, 0.25 + (wave - self.boss_min_wave) * 0.05)
+        return random.random() < chance
 
     # ─────────────────────────────────────────────────────────────────────
     #  جریان موج
@@ -339,17 +346,88 @@ class Spawner:
             print(f"[Spawner] Failed to spawn enemy: {exc}")
 
     def _spawn_boss(self) -> None:
-        """ساخت باس اصلی."""
+        """ساخت ۱ تا ۳ باس رندوم در موقعیت‌های امن."""
         try:
-            from entities.enemies.boss import BossEnemy
-            boss_x = S.Window.WIDTH / 2
-            boss_y = -150
-            boss = BossEnemy(boss_x, boss_y, scene=self.scene)
-            # انیمیشن ورود
-            boss.set_entry(boss_y, 0)
-            self._spawn_enemy(boss)
+            from entities.enemies.boss_registry import BOSS_CLASSES
+            if not BOSS_CLASSES:
+                return
         except Exception as exc:
-            print(f"[Spawner] Failed to spawn boss: {exc}")
+            print(f"[Spawner] Boss registry missing: {exc}")
+            return
+
+        count = self._pick_boss_count()
+        positions = self._compute_boss_positions(count)
+
+        for (x, sway, phase_offset) in positions:
+            try:
+                boss_cls = random.choice(BOSS_CLASSES)
+                boss = boss_cls(x, -150, scene=self.scene)
+                boss.set_entry(-150, 0)
+                boss.sway_amplitude = sway
+                boss.sway_phase_offset = phase_offset
+                self._spawn_enemy(boss)
+            except Exception as exc:
+                print(f"[Spawner] Boss spawn failed ({x:.0f}): {exc}")
+
+        # ریختن پاورآپ روی نقشه
+        self._drop_boss_wave_powerups(count)
+
+    def _drop_boss_wave_powerups(self, boss_count: int) -> None:
+        """پاورآپ زیاد هنگام شروع باس."""
+        if self.scene is None:
+            return
+        try:
+            from entities.powerup import Powerup
+
+            # تعداد: ۳ پاورآپ + ۲ برای هر باس اضافه
+            num = 3 + (boss_count - 1) * 2
+
+            positions = []
+            for i in range(num):
+                x = S.Window.WIDTH * (0.15 + 0.7 * (i / max(1, num - 1)))
+                x += random.uniform(-30, 30)
+                # بالاتر (بین ۲۵٪ تا ۵۰٪ ارتفاع) — پلیر راحت می‌گیره
+                y = random.uniform(S.Window.HEIGHT * 0.25, S.Window.HEIGHT * 0.50)
+                positions.append((x, y))
+
+            for (px, py) in positions:
+                # آهسته می‌افتند (۱۰ px/s به جای ۹۵) — پلیر وقت داره
+                pu = Powerup(px, py, scene=self.scene, fall_speed=12.0)
+                self.scene.add_powerup(pu)
+
+            try:
+                self.scene.audio.play("powerup_spawn")
+            except Exception:
+                pass
+
+            print(f"[Spawner] Dropped {num} powerups for boss wave")
+        except Exception as exc:
+            print(f"[Spawner] Failed to drop powerups: {exc}")
+
+    def _pick_boss_count(self) -> int:
+        """تعداد باس بر اساس موج — سختی منطقی."""
+        wave = self.wave
+        if wave < 10:
+            return 1
+        if wave < 15:
+            return random.choices([1, 2], weights=[70, 30])[0]
+        return random.choices([1, 2, 3], weights=[50, 35, 15])[0]
+
+    def _compute_boss_positions(self, count: int) -> list[tuple[float, float, float]]:
+        """موقعیت امن هر باس."""
+        w = S.Window.WIDTH
+        if count == 1:
+            return [(w / 2, 140.0, 0.0)]
+        if count == 2:
+            return [
+                (w * 0.30, 90.0, 0.0),
+                (w * 0.70, 90.0, math.pi),
+            ]
+        return [
+            (w * 0.20, 70.0, 0.0),
+            (w * 0.50, 70.0, math.tau / 3),
+            (w * 0.80, 70.0, 2 * math.tau / 3),
+        ]
 
     # ─────────────────────────────────────────────────────────────────────
     #  به‌روزرسانی

@@ -20,7 +20,10 @@ entities/enemies
 """
 
 from entities.enemies.base import Enemy, EnemyKind
-from entities.enemies.boss import BossEnemy
+from entities.enemies.boss_base import BossBase
+from entities.enemies.boss_void_sentinel import VoidSentinel
+from entities.enemies.boss_dreadnought import IronDreadnought
+from entities.enemies.boss_wraith import PlasmaWraith
 from entities.enemies.factory import EnemyFactory
 from entities.enemies.normal import NormalEnemy
 from entities.enemies.spiral import SpiralEnemy
@@ -28,6 +31,7 @@ from entities.enemies.tank import TankEnemy
 
 __all__ = [
     "Enemy", "EnemyKind",
-    "NormalEnemy", "TankEnemy", "SpiralEnemy", "BossEnemy",
+    "NormalEnemy", "TankEnemy", "SpiralEnemy",
+    "BossBase", "VoidSentinel", "IronDreadnought", "PlasmaWraith",
     "EnemyFactory",
 ]
