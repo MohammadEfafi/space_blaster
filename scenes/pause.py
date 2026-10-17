@@ -386,7 +386,7 @@ class PauseScene(Scene):
     def _draw_hint(self, surface: pygame.Surface, alpha: float) -> None:
         if alpha < 0.7:
             return
-        text = "↑↓ select  •  ENTER confirm  •  ESC/P resume"
+        text = "UP/DOWN  select    |    ENTER  confirm    |    ESC/P  resume"
         img = self.font_small.render(text, True, S.Palette.GREY)
         rect = img.get_rect(center=(S.Window.WIDTH // 2, S.Window.HEIGHT - 40))
         if alpha < 1.0:
