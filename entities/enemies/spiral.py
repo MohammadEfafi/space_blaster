@@ -2,22 +2,19 @@
 entities/enemies/spiral.py
 ==========================
 
-دشمن نوع سوم — Spiral (کریستال چرخان).
+دشمن نوع سوم — WRAITH (شبح).
 
-طراحی:
-    یک دشمن اسرارآمیز و شناور که با حرکت سینوسی مسیرش غیرقابل پیش‌بینی
-    است. الهام‌گرفته از کریستال‌های فضایی:
-        • بدنه‌ی ستاره‌ای شش‌پر که می‌چرخد
-        • هاله‌ی سبز درخشان به عنوان aura مرکزی
-        • هسته‌ی درخشان با پالس
-        • دنباله‌ی ذرات که پشتش رها می‌شود
-        • خطوط انرژی از مرکز به سمت رأس‌ها
+طراحی تهاجمی:
+    • بدنه‌ی شبح‌مانند (بالا پهن، پایین باریک)
+    • دُم‌های اتری موج‌دار (تکان‌دار)
+    • دو چشم قرمز شیطانی
+    • هاله‌ی بنفش/سبز مرموز
+    • حرکت سینوسی + چرخش
 
 رفتار:
-    • حرکت سینوسی افقی (غیرقابل پیش‌بینی)
-    • چرخش مداوم بدنه
-    • HP متوسط (2)
-    • بدون شلیک، ولی سریع
+    • حرکت مارپیچ
+    • سریع
+    • بدون شلیک
 """
 
 from __future__ import annotations
@@ -30,12 +27,8 @@ from core import settings as S
 from entities.enemies.base import Enemy, EnemyKind
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  کلاس SpiralEnemy
-# ═══════════════════════════════════════════════════════════════════════════
-
 class SpiralEnemy(Enemy):
-    """کریستال چرخان — سریع، غیرقابل پیش‌بینی، اسرارآمیز."""
+    """WRAITH — شبح مواج."""
 
     KIND = EnemyKind.SPIRAL
 
@@ -48,262 +41,171 @@ class SpiralEnemy(Enemy):
     FREQUENCY   = S.EnemyCfg.Spiral.FREQUENCY
     BODY_COLOR  = S.Palette.ENEMY_SPIRAL
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  پیکربندی اختصاصی
-    # ─────────────────────────────────────────────────────────────────────
-
     def _configure(self) -> None:
-        # فاز تصادفی برای اینکه هر اسپیرال جای مختلفی شروع کنه
-        self._phase: float = random.uniform(0, math.tau)
-        # زاویه‌ی چرخش فعلی
-        self._rotation: float = random.uniform(0, 360)
-        # سرعت چرخش (تصادفی، ولی همیشه مثبت)
-        self._rotation_speed: float = random.uniform(90, 150)
-
-    # ─────────────────────────────────────────────────────────────────────
-    #  منطق حرکت
-    # ─────────────────────────────────────────────────────────────────────
+        self._phase = random.uniform(0, math.tau)
 
     def update_ai(self, dt: float) -> None:
-        """حرکت سینوسی افقی + چرخش مداوم."""
-        # حرکت عمودی
         self.y += self.SPEED * dt
-        # حرکت سینوسی افقی
-        self.x = self._base_x + math.sin(
-            self._t * self.FREQUENCY + self._phase
-        ) * self.AMPLITUDE
-        # چرخش
-        self._rotation = (self._rotation + self._rotation_speed * dt) % 360
+        self.x = self._base_x + math.sin(self._t * self.FREQUENCY + self._phase) * self.AMPLITUDE
+        self.angle = self._t * 180.0
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رسم — کریستال چرخان
     # ─────────────────────────────────────────────────────────────────────
 
     def draw_body(self, surface: pygame.Surface, alpha: int = 255) -> None:
-        r = max(5, int(self.radius))
+        r = max(10, int(self.radius * 1.25))
         cx, cy = int(self.x), int(self.y)
 
         base = self.tint(self.BODY_COLOR)
-        dark = self._darker(base, 100)
-        bright = self._lighter(base, 80)
+        dark = self._darker(base, 80)
+        darker = self._darker(base, 130)
+        bright = self._lighter(base, 70)
 
-        # ---- ۱. هاله‌ی بیرونی (aura) ----
-        self._draw_aura(surface, cx, cy, r)
+        # ---- ۱. دُم‌های موج‌دار (پشت) ----
+        self._draw_tails(surface, cx, cy, r, base, dark)
 
-        # ---- ۲. ستاره‌ی بیرونی (۶ پر) ----
-        outer_pts, inner_pts = self._compute_star_points(cx, cy, r)
+        # ---- ۲. بدنه‌ی شبح ----
+        self._draw_body_shape(surface, cx, cy, r, base, dark, bright)
 
-        # سایه
-        pygame.draw.polygon(surface, dark, outer_pts)
-        # بدنه
-        pygame.draw.polygon(surface, base, outer_pts)
-        # خط نئونی
-        pygame.draw.polygon(surface, bright, outer_pts, 2)
+        # ---- ۳. دو چشم شیطانی ----
+        self._draw_eyes(surface, cx, cy, r)
 
-        # ---- ۳. ستاره‌ی داخلی (کوچک‌تر، چرخش مخالف) ----
-        inner_outer, inner_inner = self._compute_star_points(
-            cx, cy, int(r * 0.55),
-            rotation_offset=-30.0,  # چرخش مخالف برای تضاد
-        )
-        pygame.draw.polygon(surface, dark, inner_outer)
-        pygame.draw.polygon(surface, bright, inner_outer, 1)
+        # ---- ۴. خطوط اتریک ----
+        self._draw_ethereal_lines(surface, cx, cy, r, darker)
 
-        # ---- ۴. خطوط انرژی از مرکز به رأس‌ها ----
-        self._draw_energy_lines(surface, cx, cy, r, bright)
-
-        # ---- ۵. هسته‌ی درخشان ----
-        self._draw_core(surface, cx, cy, r)
-
-        # ---- ۶. رأس‌های درخشان ----
-        self._draw_vertex_glows(surface, outer_pts, r)
-
-        # ---- ۷. دنباله‌ی ذرات ----
-        self._draw_trail(surface, cx, cy, r)
-
-        # ---- ۸. فید ورود ----
+        # ---- ۵. فید ----
         if alpha < 250:
             self._apply_fade(surface, cx, cy, r, alpha)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  محاسبه‌ی نقاط ستاره
-    # ─────────────────────────────────────────────────────────────────────
-
-    def _compute_star_points(
-        self,
-        cx: int, cy: int, r: float,
-        rotation_offset: float = 0.0,
-    ) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
-        """
-        نقاط ستاره‌ی شش‌پر (۱۲ نقطه: ۶ بیرونی + ۶ داخلی) رو محاسبه می‌کنه.
-        rotation_offset درجه‌ی اضافی روی چرخش اعمال می‌کنه.
-        """
-        outer: list[tuple[float, float]] = []
-        inner: list[tuple[float, float]] = []
-
-        rot_rad = math.radians(self._rotation + rotation_offset)
-        num_points = 6
-
-        for i in range(num_points):
-            # نقطه‌ی بیرونی
-            a_out = rot_rad + (i / num_points) * math.tau
-            outer.append((
-                cx + math.cos(a_out) * r,
-                cy + math.sin(a_out) * r,
-            ))
-            # نقطه‌ی داخلی (بین دو بیرونی)
-            a_in = a_out + math.pi / num_points
-            inner.append((
-                cx + math.cos(a_in) * r * 0.45,
-                cy + math.sin(a_in) * r * 0.45,
-            ))
-
-        # ترکیب: بیرونی → داخلی → بیرونی → ...
-        star = []
-        for i in range(num_points):
-            star.append(outer[i])
-            star.append(inner[i])
-
-        return star, inner
-
-    # ─────────────────────────────────────────────────────────────────────
-    #  اجزای رسم
-    # ─────────────────────────────────────────────────────────────────────
-
-    def _draw_aura(
-        self, surface: pygame.Surface, cx: int, cy: int, r: int,
-    ) -> None:
-        """هاله‌ی سبز نرم پشت کریستال."""
-        aura_r = int(r * 1.6)
-        if aura_r <= 0:
-            return
-        aura = pygame.Surface((aura_r * 2, aura_r * 2), pygame.SRCALPHA)
-        # پالس ملایم
-        pulse = 0.85 + 0.15 * math.sin(self._t * 4.0)
-        for rr in range(aura_r, 0, -2):
-            a = int(50 * (1 - rr / aura_r) ** 1.4 * pulse)
-            if a <= 0:
-                continue
-            pygame.draw.circle(aura, (80, 255, 140, a), (aura_r, aura_r), rr)
-        surface.blit(
-            aura, (cx - aura_r, cy - aura_r),
-            special_flags=pygame.BLEND_RGBA_ADD,
-        )
-
-    def _draw_energy_lines(
+    def _draw_tails(
         self,
         surface: pygame.Surface,
         cx: int, cy: int, r: int,
-        bright: tuple[int, int, int],
+        base: tuple[int, int, int],
+        dark: tuple[int, int, int],
     ) -> None:
-        """خطوط انرژی از مرکز به سمت رأس‌های ستاره."""
-        rot_rad = math.radians(self._rotation)
-        num_points = 6
-        for i in range(num_points):
-            a = rot_rad + (i / num_points) * math.tau
-            x1 = cx + math.cos(a) * r * 0.30
-            y1 = cy + math.sin(a) * r * 0.30
-            x2 = cx + math.cos(a) * r * 0.85
-            y2 = cy + math.sin(a) * r * 0.85
-            # پالس شفافیت
-            alpha_factor = 0.5 + 0.5 * math.sin(self._t * 6.0 + i)
-            a_val = int(120 + 100 * alpha_factor)
-            line_surf = pygame.Surface((abs(int(x2 - x1)) + 4, abs(int(y2 - y1)) + 4),
-                                        pygame.SRCALPHA)
-            ox = min(x1, x2) - 2
-            oy = min(y1, y2) - 2
-            pygame.draw.line(
-                line_surf, (*bright, a_val),
-                (x1 - ox, y1 - oy),
-                (x2 - ox, y2 - oy),
-                1,
-            )
-            surface.blit(line_surf, (ox, oy))
+        """سه دُم موج‌دار (پشت شبح)."""
+        for i, sign in enumerate((-1, 0, 1)):
+            # موج سینوسی دُم
+            wave = math.sin(self._t * 4.0 + i * 1.5) * r * 0.15
 
-    def _draw_core(
-        self, surface: pygame.Surface, cx: int, cy: int, r: int,
-    ) -> None:
-        """هسته‌ی درخشان در مرکز."""
-        pulse = 0.7 + 0.3 * math.sin(self._t * 8.0)
-        core_r = max(3, int(r * 0.22 * pulse))
+            # نقاط دُم
+            tail_x = cx + sign * int(r * 0.4) + int(wave)
+            tail_y = cy - int(r * 1.2)
+            tail_len = int(r * 1.0) + i * 4
 
-        # هاله‌ی هسته
-        glow_size = int(r * 0.5)
-        glow = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
-        for rr in range(glow_size, 0, -1):
-            a = int(160 * (1 - rr / glow_size) * pulse)
-            if a <= 0:
-                continue
-            pygame.draw.circle(glow, (200, 255, 220, a), (glow_size, glow_size), rr)
-        surface.blit(
-            glow, (cx - glow_size, cy - glow_size),
-            special_flags=pygame.BLEND_RGBA_ADD,
-        )
-
-        # هسته
-        pygame.draw.circle(surface, (220, 255, 230), (cx, cy), core_r)
-        pygame.draw.circle(surface, (255, 255, 255), (cx, cy), max(1, core_r // 2))
-
-    def _draw_vertex_glows(
-        self,
-        surface: pygame.Surface,
-        outer_pts: list[tuple[float, float]],
-        r: int,
-    ) -> None:
-        """نقاط درخشان روی رأس‌های ستاره."""
-        size = max(2, int(r * 0.13))
-        for (vx, vy) in outer_pts:
-            # هاله
-            glow = pygame.Surface((size * 4, size * 4), pygame.SRCALPHA)
-            for rr in range(size * 2, 0, -1):
-                a = int(120 * (1 - rr / (size * 2)))
+            # هاله‌ی سبز
+            for rr in range(8, 0, -2):
+                a = int(80 * (1 - rr / 8))
                 if a <= 0:
                     continue
-                pygame.draw.circle(glow, (200, 255, 220, a),
-                                   (size * 2, size * 2), rr)
-            surface.blit(
-                glow,
-                (int(vx) - size * 2, int(vy) - size * 2),
-                special_flags=pygame.BLEND_RGBA_ADD,
-            )
-            # نقطه‌ی مرکزی
-            pygame.draw.circle(surface, (255, 255, 255), (int(vx), int(vy)), size)
+                g = pygame.Surface((rr * 4, rr * 4), pygame.SRCALPHA)
+                pygame.draw.circle(g, (*base, a), (rr * 2, rr * 2), rr)
+                surface.blit(g, (tail_x - rr * 2, tail_y - rr * 2),
+                             special_flags=pygame.BLEND_RGBA_ADD)
 
-    def _draw_trail(
-        self, surface: pygame.Surface, cx: int, cy: int, r: int,
+            # خود دُم
+            pygame.draw.polygon(surface, dark, [
+                (tail_x - int(r * 0.15), tail_y + 4),
+                (tail_x + int(r * 0.15), tail_y + 4),
+                (tail_x + sign * 8 + int(wave), tail_y - tail_len),
+            ])
+            pygame.draw.polygon(surface, base, [
+                (tail_x - int(r * 0.08), tail_y + 2),
+                (tail_x + int(r * 0.08), tail_y + 2),
+                (tail_x + sign * 4 + int(wave), tail_y - int(tail_len * 0.7)),
+            ])
+
+    def _draw_body_shape(
+        self,
+        surface: pygame.Surface,
+        cx: int, cy: int, r: int,
+        base: tuple[int, int, int],
+        dark: tuple[int, int, int],
+        bright: tuple[int, int, int],
     ) -> None:
-        """دنباله‌ی ذرات ضعیف پشت کریستال."""
-        # ۳ ذره‌ی کوچک با مکان‌های تصادفی (شبه)
+        """بدنه‌ی شبح: بالا پهن، پایین چروکیده."""
+        # بدنه با یال‌های پایین (چروکیده)
+        hull = [
+            (cx,                  cy - int(r * 0.9)),    # بالای سر
+            (cx - int(r * 0.7),   cy - int(r * 0.3)),    # شانه چپ
+            (cx - int(r * 0.5),   cy + int(r * 0.2)),    # پهلو چپ
+            (cx - int(r * 0.65),  cy + int(r * 0.7)),    # یال ۱ چپ
+            (cx - int(r * 0.4),   cy + int(r * 0.55)),   # شکاف
+            (cx - int(r * 0.2),   cy + int(r * 0.9)),    # یال ۲
+            (cx,                  cy + int(r * 0.7)),    # شکاف وسط
+            (cx + int(r * 0.2),   cy + int(r * 0.9)),    # یال ۳
+            (cx + int(r * 0.4),   cy + int(r * 0.55)),   # شکاف
+            (cx + int(r * 0.65),  cy + int(r * 0.7)),    # یال ۴ راست
+            (cx + int(r * 0.5),   cy + int(r * 0.2)),    # پهلو راست
+            (cx + int(r * 0.7),   cy - int(r * 0.3)),    # شانه راست
+        ]
+
+        # سایه
+        shadow = [(x, y + 2) for (x, y) in hull]
+        pygame.draw.polygon(surface, dark, shadow)
+
+        # بدنه
+        pygame.draw.polygon(surface, base, hull)
+        pygame.draw.polygon(surface, bright, hull, 2)
+
+        # درخشش داخلی
+        inner = [
+            (cx,                  cy - int(r * 0.7)),
+            (cx - int(r * 0.4),   cy - int(r * 0.2)),
+            (cx - int(r * 0.3),   cy + int(r * 0.3)),
+            (cx,                  cy + int(r * 0.5)),
+            (cx + int(r * 0.3),   cy + int(r * 0.3)),
+            (cx + int(r * 0.4),   cy - int(r * 0.2)),
+        ]
+        pygame.draw.polygon(surface, self._lighter(base, 30), inner)
+
+    def _draw_eyes(self, surface: pygame.Surface, cx: int, cy: int, r: int) -> None:
+        """دو چشم قرمز شیطانی."""
+        eye_y = cy - int(r * 0.25)
+        eye_offset = int(r * 0.28)
+        eye_r = max(2, int(r * 0.14))
+
+        for sign in (-1, 1):
+            ex = cx + sign * eye_offset
+
+            # هاله
+            glow_size = eye_r * 4
+            glow = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
+            for rr in range(glow_size, 0, -1):
+                a = int(150 * (1 - rr / glow_size))
+                if a <= 0:
+                    continue
+                pygame.draw.circle(glow, (255, 40, 40, a),
+                                   (glow_size, glow_size), rr)
+            surface.blit(glow, (ex - glow_size, eye_y - glow_size),
+                         special_flags=pygame.BLEND_RGBA_ADD)
+
+            # خود چشم (بیضی عمودی)
+            eye_surf = pygame.Surface((eye_r * 3, eye_r * 4), pygame.SRCALPHA)
+            pygame.draw.ellipse(eye_surf, (255, 40, 40),
+                                (0, 0, eye_r * 3, eye_r * 4))
+            pygame.draw.ellipse(eye_surf, (255, 200, 200),
+                                (eye_r, eye_r, eye_r, eye_r * 2))
+            surface.blit(eye_surf, (ex - eye_r * 1.5, eye_y - eye_r * 2))
+
+    def _draw_ethereal_lines(
+        self,
+        surface: pygame.Surface,
+        cx: int, cy: int, r: int,
+        darker: tuple[int, int, int],
+    ) -> None:
+        """خطوط موج‌دار روی بدنه."""
         for i in range(3):
-            # offset با چرخش زمان
-            phase = self._t * 2.0 + i * 2.1
-            offset_x = math.cos(phase) * r * 0.7
-            offset_y = -r * (0.9 + i * 0.15)
-            px = int(cx + offset_x)
-            py = int(cy + offset_y)
-
-            size = max(1, int(r * 0.10 - i * 0.5))
-            if size <= 0:
-                continue
-
-            alpha = int(80 - i * 20)
-            if alpha <= 0:
-                continue
-
-            dot = pygame.Surface((size * 4, size * 4), pygame.SRCALPHA)
-            pygame.draw.circle(dot, (180, 255, 200, alpha),
-                               (size * 2, size * 2), size)
-            surface.blit(
-                dot, (px - size * 2, py - size * 2),
-                special_flags=pygame.BLEND_RGBA_ADD,
+            y = cy - int(r * 0.3) + i * int(r * 0.25)
+            w = int(r * 0.35) - i * 3
+            pygame.draw.line(
+                surface, darker,
+                (cx - w, y), (cx + w, y), 1,
             )
 
     def _apply_fade(
-        self,
-        surface: pygame.Surface,
-        cx: int, cy: int, r: int,
-        alpha: int,
+        self, surface: pygame.Surface, cx: int, cy: int, r: int, alpha: int,
     ) -> None:
-        """پوشش نیمه‌شفاف برای انیمیشن ورود."""
         a = 255 - alpha
         if a <= 0:
             return
@@ -311,22 +213,13 @@ class SpiralEnemy(Enemy):
         fade.fill((0, 0, 0, int(a * 0.7)))
         surface.blit(fade, (cx - r * 2, cy - r * 2))
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  کمکی‌های رنگ
-    # ─────────────────────────────────────────────────────────────────────
-
     @staticmethod
-    def _darker(c: tuple[int, int, int], amount: int) -> tuple[int, int, int]:
+    def _darker(c, amount):
         return (max(0, c[0] - amount), max(0, c[1] - amount), max(0, c[2] - amount))
 
     @staticmethod
-    def _lighter(c: tuple[int, int, int], amount: int) -> tuple[int, int, int]:
+    def _lighter(c, amount):
         return (min(255, c[0] + amount), min(255, c[1] + amount), min(255, c[2] + amount))
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  import لازم برای random
-# ═══════════════════════════════════════════════════════════════════════════
 
 
 __all__ = ["SpiralEnemy"]
