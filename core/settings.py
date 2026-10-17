@@ -159,7 +159,7 @@ class EnemyCfg:
         RADIUS:      Final[int]   = 14
         SPEED:       Final[float] = 130.0
         SCORE:       Final[int]   = 10
-        DROP_CHANCE: Final[float] = 0.05
+        DROP_CHANCE: Final[float] = 0.12
 
     class Tank:
         """دشمن سنگین — به سمت پلیر شلیک می‌کند."""
