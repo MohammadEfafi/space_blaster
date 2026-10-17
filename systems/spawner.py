@@ -308,10 +308,11 @@ class Spawner:
         self.is_boss_wave = self._is_boss_wave(self.wave)
 
         # تعداد
-        self.total_in_wave = self._enemy_count_for_wave(self.wave)
         if self.is_boss_wave:
-            # موج باس: دشمن‌های کمتری از معمول، ولی باس وسطشون
-            self.total_in_wave = max(3, self.total_in_wave // 2)
+            # موج باس: فقط باس (بدون دشمن اضافی)
+            self.total_in_wave = 0
+        else:
+            self.total_in_wave = self._enemy_count_for_wave(self.wave)
 
         self.remaining_to_spawn = self.total_in_wave
         self._spawn_timer = 0.0
@@ -338,16 +339,15 @@ class Spawner:
             print(f"[Spawner] Failed to spawn enemy: {exc}")
 
     def _spawn_boss(self) -> None:
-        """
-        Hook برای ساخت باس. تا زمانی که Boss کلاس نداشته باشیم،
-        فقط یک Tank خیلی قوی می‌سازیم (placeholder).
-        """
-        # TODO: وقتی entities/boss.py ساخته شد، از Boss استفاده کن.
+        """ساخت باس اصلی."""
         try:
-            # فعلاً ۳ تا Tank سخت جای باس
-            for _ in range(3):
-                tank = self.factory.spawn(self.wave, kind=None)
-                self._spawn_enemy(tank)
+            from entities.enemies.boss import BossEnemy
+            boss_x = S.Window.WIDTH / 2
+            boss_y = -150
+            boss = BossEnemy(boss_x, boss_y, scene=self.scene)
+            # انیمیشن ورود
+            boss.set_entry(boss_y, 0)
+            self._spawn_enemy(boss)
         except Exception as exc:
             print(f"[Spawner] Failed to spawn boss: {exc}")
 
@@ -397,16 +397,17 @@ class Spawner:
 
     # ── وضعیت: تولید دشمن ----
     def _update_spawning(self, dt: float) -> None:
+        # ---- موج باس: فقط باس ----
+        if self.is_boss_wave:
+            self._spawn_boss()
+            self.state = SpawnState.FIGHTING
+            self._state_timer = 0.0
+            return
+
         interval = self._spawn_interval_for_wave(self.wave)
 
         self._spawn_timer -= dt
         if self._spawn_timer <= 0.0:
-            # در موج باس، وقتی نیمی spawn شد، باس ظاهر می‌شود
-            if self.is_boss_wave:
-                half = self.total_in_wave // 2
-                if self.remaining_to_spawn == self.total_in_wave - half:
-                    self._spawn_boss()
-
             if self.remaining_to_spawn > 0:
                 self._spawn_one()
                 self.remaining_to_spawn -= 1

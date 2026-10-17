@@ -20,20 +20,14 @@ entities/enemies
 """
 
 from entities.enemies.base import Enemy, EnemyKind
+from entities.enemies.boss import BossEnemy
 from entities.enemies.factory import EnemyFactory
 from entities.enemies.normal import NormalEnemy
 from entities.enemies.spiral import SpiralEnemy
 from entities.enemies.tank import TankEnemy
 
-
 __all__ = [
-    # ---- پایه ----
-    "Enemy",
-    "EnemyKind",
-    # ---- انواع ----
-    "NormalEnemy",
-    "TankEnemy",
-    "SpiralEnemy",
-    # ---- کارخانه ----
+    "Enemy", "EnemyKind",
+    "NormalEnemy", "TankEnemy", "SpiralEnemy", "BossEnemy",
     "EnemyFactory",
 ]
