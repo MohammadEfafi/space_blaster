@@ -552,47 +552,88 @@ class HUD:
             return
 
         cx = S.Window.WIDTH // 2
-        y = S.Window.HEIGHT - 110
+        y = S.Window.HEIGHT - 140  # کمی بالاتر از قبل
 
-        # رنگ بر اساس مقدار combo
-        if self.combo >= 20:
-            color = S.Palette.PINK
+        # ---- رنگ بر اساس مقدار combo ----
+        if self.combo >= 30:
+            color = (255, 80, 200)      # صورتی جیغ
+        elif self.combo >= 20:
+            color = (255, 60, 60)       # قرمز آتشین
         elif self.combo >= 10:
-            color = S.Palette.YELLOW
+            color = (255, 180, 40)      # نارنجی طلایی
         else:
-            color = S.Palette.HUD_ACCENT
+            color = (255, 240, 80)      # زرد روشن
 
-        font = self._get_font(S.FontCfg.LARGE, bold=True)
+        # ---- متن ----
         text = f"{self.combo}x COMBO"
-
-        # scale انیمیشن
+        font = self._get_font(S.FontCfg.LARGE, bold=True)
         img = font.render(text, True, color)
-        w = int(img.get_width() * self.combo_scale)
-        h = int(img.get_height() * self.combo_scale)
-        if w > 0 and h > 0:
-            img_scaled = pygame.transform.smoothscale(img, (w, h))
-            rect = img_scaled.get_rect(center=(cx, y))
 
-            # هاله‌ی رنگی
-            glow = pygame.transform.smoothscale(img, (int(w * 1.15), int(h * 1.15)))
-            gs = pygame.Surface(glow.get_size(), pygame.SRCALPHA)
-            gs.blit(glow, (0, 0))
-            gs.set_alpha(80)
-            surface.blit(
-                gs, gs.get_rect(center=rect.center),
-                special_flags=pygame.BLEND_RGBA_ADD,
-            )
+        # اعمال scale
+        w = max(1, int(img.get_width() * self.combo_scale))
+        h = max(1, int(img.get_height() * self.combo_scale))
+        img_scaled = pygame.transform.smoothscale(img, (w, h))
+        rect = img_scaled.get_rect(center=(cx, y))
 
-            surface.blit(img_scaled, rect)
+        # ---- پس‌زمینه‌ی شیشه‌ای (مهم‌ترین بخش برای خوانایی) ----
+        pad_x = 24
+        pad_y = 10
+        bg_rect = pygame.Rect(
+            rect.x - pad_x,
+            rect.y - pad_y,
+            rect.width + pad_x * 2,
+            rect.height + pad_y * 2,
+        )
 
-        # نوار زمان combo
+        # گرادیان ملایم در پس‌زمینه
+        bg = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(bg, (10, 15, 30, 200), bg.get_rect(), border_radius=12)
+        surface.blit(bg, bg_rect.topleft)
+
+        # حاشیه‌ی درخشان
+        border = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(
+            border, (*color, 180),
+            border.get_rect(), 2, border_radius=12,
+        )
+        surface.blit(border, bg_rect.topleft)
+
+        # ---- درخشش نرم پشت متن ----
+        glow_r = 40
+        halo = pygame.Surface((w + glow_r * 2, h + glow_r * 2), pygame.SRCALPHA)
+        for rr in range(glow_r, 0, -4):
+            a = int(50 * (1 - rr / glow_r) ** 2)
+            if a <= 0:
+                continue
+            pygame.draw.circle(halo, (*color, a), (w // 2 + glow_r, h // 2 + glow_r), rr)
+        surface.blit(
+            halo, (rect.x - glow_r, rect.y - glow_r),
+            special_flags=pygame.BLEND_RGBA_ADD,
+        )
+
+        # ---- خط دور متن (Outline) برای خوانایی صد در صد ----
+        outline_color = (0, 0, 0)
+        for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, 2), (-2, 2), (2, -2)]:
+            shadow = font.render(text, True, outline_color)
+            w2 = max(1, int(shadow.get_width() * self.combo_scale))
+            h2 = max(1, int(shadow.get_height() * self.combo_scale))
+            shadow_scaled = pygame.transform.smoothscale(shadow, (w2, h2))
+            surface.blit(shadow_scaled, (rect.x + dx, rect.y + dy))
+
+        # ---- متن اصلی ----
+        surface.blit(img_scaled, rect)
+
+        # ---- نوار زمان Combo در زیر باکس ----
         ratio = max(0.0, self.combo_timer / self.combo_max_time) if self.combo_max_time > 0 else 0.0
-        bar_w = 120
-        bar_h = 3
-        bar_x = cx - bar_w // 2
-        bar_y = y + 24
-        pygame.draw.rect(surface, (30, 30, 50), (bar_x, bar_y, bar_w, bar_h))
-        pygame.draw.rect(surface, color, (bar_x, bar_y, int(bar_w * ratio), bar_h))
+        bar_w = bg_rect.width - 20
+        bar_h = 4
+        bar_x = bg_rect.x + 10
+        bar_y = bg_rect.bottom - 2
+
+        # پس‌زمینه‌ی نوار
+        pygame.draw.rect(surface, (30, 30, 50), (bar_x, bar_y, bar_w, bar_h), border_radius=2)
+        # نوار پر شده
+        pygame.draw.rect(surface, color, (bar_x, bar_y, int(bar_w * ratio), bar_h), border_radius=2)
 
     # ── متن‌های شناور ──
     def _draw_floaters(self, surface: pygame.Surface) -> None:
