@@ -49,6 +49,7 @@ class EnemyKind(Enum):
     NORMAL = auto()
     TANK   = auto()
     SPIRAL = auto()
+    BOSS   = auto()
 
 
 # ═══════════════════════════════════════════════════════════════════════════

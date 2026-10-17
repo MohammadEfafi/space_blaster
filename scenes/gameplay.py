@@ -98,6 +98,7 @@ class GameplayScene(Scene):
         self.paused_internal: bool = False
         self.game_over_pending: bool = False
         self.game_over_timer: float = 0.0    # مکث کوتاه قبل از رفتن به GameOver
+        self.boss_defeated_timer: float = 0.0
         self._shoot_was_held: bool = False
 
         # ---- HUD init ----
@@ -324,6 +325,9 @@ class GameplayScene(Scene):
             rect = img.get_rect(center=(S.Window.WIDTH // 2, S.Window.HEIGHT - 40))
             surface.blit(img, rect)
 
+        # ---- نوار HP باس ----
+        self._draw_boss_health_bar(surface)
+
         # ---- دیباگ هیت‌باکس ----
         if S.Debug.SHOW_HITBOX:
             self.collision.draw_debug(surface, [self.player] + self.enemies + self.bullets)
@@ -485,5 +489,86 @@ class GameplayScene(Scene):
         if self.audio:
             self.audio.stop_music(fade_ms=300)
         self.go_to(S.SceneName.MENU.value)
+        
+    # ─────────────────────────────────────────────────────────────────────
+    #  باس فایت
+    # ─────────────────────────────────────────────────────────────────────
+
+    def _get_boss(self):
+        """باس زنده رو برمی‌گردونه (اگه هست)."""
+        from entities.enemies.boss import BossEnemy
+        for e in self.enemies:
+            if isinstance(e, BossEnemy) and e.alive:
+                return e
+        return None
+
+    def on_boss_defeated(self) -> None:
+        """وقتی باس کشته شد."""
+        self.boss_defeated_timer = 2.5  # پیام پیروزی
+        try:
+            self.hud.notify_text(
+                "BOSS DEFEATED!",
+                S.Window.WIDTH // 2, S.Window.HEIGHT // 2,
+                color=(255, 240, 80),
+                font_size=48,
+                life=2.0,
+            )
+        except Exception:
+            pass
+
+    def _draw_boss_health_bar(self, surface: pygame.Surface) -> None:
+        """نوار HP باس در بالای صفحه."""
+        boss = self._get_boss()
+        if boss is None:
+            return
+
+        bar_w = S.Window.WIDTH - 200
+        bar_h = 22
+        x = 100
+        y = 70
+
+        # ---- پس‌زمینه ----
+        bg = pygame.Surface((bar_w + 4, bar_h + 4), pygame.SRCALPHA)
+        bg.fill((5, 5, 15, 220))
+        surface.blit(bg, (x - 2, y - 2))
+
+        # ---- نوار پر شده ----
+        ratio = max(0.0, boss.hp / boss.max_hp)
+
+        # رنگ بر اساس فاز
+        if ratio > 0.5:
+            color = (255, 60, 60)
+            color_dark = (150, 20, 20)
+        elif ratio > 0.25:
+            color = (255, 140, 40)
+            color_dark = (150, 60, 10)
+        else:
+            color = (255, 80, 255)
+            color_dark = (150, 30, 150)
+
+        filled_w = int(bar_w * ratio)
+        if filled_w > 0:
+            # گرادیان
+            bar_surf = pygame.Surface((filled_w, bar_h), pygame.SRCALPHA)
+            for i in range(filled_w):
+                t = i / max(1, filled_w - 1)
+                r = int(color_dark[0] * (1 - t) + color[0] * t)
+                g = int(color_dark[1] * (1 - t) + color[1] * t)
+                b = int(color_dark[2] * (1 - t) + color[2] * t)
+                pygame.draw.line(bar_surf, (r, g, b, 255), (i, 0), (i, bar_h))
+            surface.blit(bar_surf, (x, y))
+
+        # ---- حاشیه ----
+        pygame.draw.rect(surface, color, (x, y, bar_w, bar_h), 2)
+
+        # ---- متن ----
+        label = f"VOID SENTINEL    {boss.hp} / {boss.max_hp}"
+        font = pygame.font.SysFont(S.FontCfg.FAMILY, 20, bold=True)
+        text = font.render(label, True, (255, 240, 255))
+        text_rect = text.get_rect(center=(x + bar_w // 2, y + bar_h // 2))
+        # سایه
+        shadow = font.render(label, True, (0, 0, 0))
+        surface.blit(shadow, (text_rect.x + 1, text_rect.y + 1))
+        surface.blit(text, text_rect)
 
 __all__ = ["GameplayScene"]
