@@ -396,9 +396,18 @@ class GameplayScene(Scene):
         """انفجار برداشتن پاورآپ."""
         self.particles.preset_powerup_burst(x, y, color)
 
-    def spawn_powerup(self, x: float, y: float, kind: Optional[PowerupKind] = None) -> None:
-        """ساخت یک پاورآپ در موقعیت مشخص (توسط Enemy.on_death صدا زده می‌شود)."""
+    def spawn_powerup(
+        self, x: float, y: float, kind: Optional[PowerupKind] = None,
+    ) -> None:
+        """ساخت پاورآپ. در باس‌فایت BOMB نمی‌ندازه."""
         try:
+            # در باس‌فایت، BOMB نمیاد
+            if kind is None and self._get_bosses():
+                import random as _r
+                non_bomb = [k for k in PowerupKind if k != PowerupKind.BOMB]
+                if non_bomb:
+                    kind = _r.choice(non_bomb)
+
             pu = Powerup(x, y, kind=kind, scene=self)
             self.powerups.append(pu)
             if self.audio:
@@ -423,9 +432,13 @@ class GameplayScene(Scene):
         self.particles.preset_boss_explosion(x, y)  # افکت بزرگ
         self.camera.shake(S.FxCfg.SHAKE_ON_BOSS_KILL, aftershock=2)
 
-        # نابود کردن دشمن‌ها
+        # نابود کردن دشمن‌ها (باس‌ها در امان)
+        from entities.enemies.boss_base import BossBase
         for enemy in list(self.enemies):
             if not enemy.alive:
+                continue
+            # باس‌ها رو نکش
+            if isinstance(enemy, BossBase):
                 continue
             # امتیاز نصفه
             self.score += int(getattr(enemy, "score_value", 10) * 0.5)
@@ -494,13 +507,10 @@ class GameplayScene(Scene):
     #  باس فایت
     # ─────────────────────────────────────────────────────────────────────
 
-    def _get_boss(self):
-        """باس زنده رو برمی‌گردونه (اگه هست)."""
-        from entities.enemies.boss import BossEnemy
-        for e in self.enemies:
-            if isinstance(e, BossEnemy) and e.alive:
-                return e
-        return None
+    def _get_bosses(self) -> list:
+        """همه‌ی باس‌های زنده."""
+        from entities.enemies.boss_base import BossBase
+        return [e for e in self.enemies if isinstance(e, BossBase) and e.alive]
 
     def on_boss_defeated(self) -> None:
         """وقتی باس کشته شد."""
@@ -517,58 +527,65 @@ class GameplayScene(Scene):
             pass
 
     def _draw_boss_health_bar(self, surface: pygame.Surface) -> None:
-        """نوار HP باس در بالای صفحه."""
-        boss = self._get_boss()
-        if boss is None:
+        """نوار HP همه‌ی باس‌ها."""
+        bosses = self._get_bosses()
+        if not bosses:
             return
 
+        n = len(bosses)
         bar_w = S.Window.WIDTH - 200
-        bar_h = 22
         x = 100
-        y = 70
 
-        # ---- پس‌زمینه ----
-        bg = pygame.Surface((bar_w + 4, bar_h + 4), pygame.SRCALPHA)
-        bg.fill((5, 5, 15, 220))
-        surface.blit(bg, (x - 2, y - 2))
-
-        # ---- نوار پر شده ----
-        ratio = max(0.0, boss.hp / boss.max_hp)
-
-        # رنگ بر اساس فاز
-        if ratio > 0.5:
-            color = (255, 60, 60)
-            color_dark = (150, 20, 20)
-        elif ratio > 0.25:
-            color = (255, 140, 40)
-            color_dark = (150, 60, 10)
+        if n == 1:
+            bar_h, gap, top = 22, 0, 70
         else:
-            color = (255, 80, 255)
-            color_dark = (150, 30, 150)
+            bar_h, gap, top = 16, 6, 68
 
-        filled_w = int(bar_w * ratio)
-        if filled_w > 0:
-            # گرادیان
-            bar_surf = pygame.Surface((filled_w, bar_h), pygame.SRCALPHA)
-            for i in range(filled_w):
-                t = i / max(1, filled_w - 1)
-                r = int(color_dark[0] * (1 - t) + color[0] * t)
-                g = int(color_dark[1] * (1 - t) + color[1] * t)
-                b = int(color_dark[2] * (1 - t) + color[2] * t)
-                pygame.draw.line(bar_surf, (r, g, b, 255), (i, 0), (i, bar_h))
-            surface.blit(bar_surf, (x, y))
+        font_size = 20 if n == 1 else 15
+        font = pygame.font.SysFont(S.FontCfg.FAMILY, font_size, bold=True)
 
-        # ---- حاشیه ----
-        pygame.draw.rect(surface, color, (x, y, bar_w, bar_h), 2)
+        for i, boss in enumerate(bosses):
+            y = top + i * (bar_h + gap)
+            ratio = max(0.0, boss.hp / boss.max_hp)
 
-        # ---- متن ----
-        label = f"VOID SENTINEL    {boss.hp} / {boss.max_hp}"
-        font = pygame.font.SysFont(S.FontCfg.FAMILY, 20, bold=True)
-        text = font.render(label, True, (255, 240, 255))
-        text_rect = text.get_rect(center=(x + bar_w // 2, y + bar_h // 2))
-        # سایه
-        shadow = font.render(label, True, (0, 0, 0))
-        surface.blit(shadow, (text_rect.x + 1, text_rect.y + 1))
-        surface.blit(text, text_rect)
+            # رنگ
+            if ratio > 0.5:
+                color = (255, 60, 60)
+                dark_c = (150, 20, 20)
+            elif ratio > 0.25:
+                color = (255, 140, 40)
+                dark_c = (150, 60, 10)
+            else:
+                color = (255, 80, 255)
+                dark_c = (150, 30, 150)
+
+            # ---- پس‌زمینه ----
+            bg = pygame.Surface((bar_w + 4, bar_h + 4), pygame.SRCALPHA)
+            bg.fill((5, 5, 15, 220))
+            surface.blit(bg, (x - 2, y - 2))
+
+            # ---- پر شده ----
+            filled = int(bar_w * ratio)
+            if filled > 0:
+                bsurf = pygame.Surface((filled, bar_h), pygame.SRCALPHA)
+                for j in range(filled):
+                    t = j / max(1, filled - 1)
+                    r = int(dark_c[0] * (1 - t) + color[0] * t)
+                    g = int(dark_c[1] * (1 - t) + color[1] * t)
+                    b = int(dark_c[2] * (1 - t) + color[2] * t)
+                    pygame.draw.line(bsurf, (r, g, b, 255), (j, 0), (j, bar_h))
+                surface.blit(bsurf, (x, y))
+
+            # ---- حاشیه ----
+            pygame.draw.rect(surface, color, (x, y, bar_w, bar_h), 2)
+
+            # ---- متن ----
+            name = getattr(boss, "boss_name", "BOSS")
+            label = f"{name}   {boss.hp} / {boss.max_hp}"
+            text = font.render(label, True, (255, 240, 255))
+            t_rect = text.get_rect(center=(x + bar_w // 2, y + bar_h // 2))
+            shadow = font.render(label, True, (0, 0, 0))
+            surface.blit(shadow, (t_rect.x + 1, t_rect.y + 1))
+            surface.blit(text, t_rect)
 
 __all__ = ["GameplayScene"]

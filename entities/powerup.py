@@ -136,6 +136,7 @@ class Powerup(Entity):
         kind: Optional[PowerupKind] = None,
         scene: Optional["GameplayScene"] = None,
         lifetime: float = 12.0,
+        fall_speed: Optional[float] = None,
     ) -> None:
         if kind is None:
             kind = self._random_kind()
@@ -155,6 +156,9 @@ class Powerup(Entity):
         self.style: _Style = style
         self.lifetime: float = float(lifetime)
         self.max_lifetime: float = float(lifetime)
+        self.fall_speed: float = (
+            S.PowerupCfg.FALL_SPEED if fall_speed is None else float(fall_speed)
+        )
 
         # ---- مغناطیس ----
         self._magnet_active: bool = False
@@ -215,7 +219,7 @@ class Powerup(Entity):
         if player is not None and player.alive:
             self._handle_magnet(player, dt)
         else:
-            self.y += S.PowerupCfg.FALL_SPEED * dt
+            self.y += self.fall_speed * dt
 
         # ---- خروج از پایین ----
         if self.y > S.Window.HEIGHT + self.radius + 20:
@@ -246,7 +250,7 @@ class Powerup(Entity):
                 return
         else:
             self._magnet_active = False
-            self.y += S.PowerupCfg.FALL_SPEED * dt
+            self.y += self.fall_speed * dt
 
     # ─────────────────────────────────────────────────────────────────────
     #  برداشتن
