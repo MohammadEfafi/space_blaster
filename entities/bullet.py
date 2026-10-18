@@ -390,4 +390,108 @@ class Bullet(Entity):
         return False
 
 
-__all__ = ["Bullet", "BulletKind"]
+# ═══════════════════════════════════════════════════════════════════════════
+#  کلاس Bomb — گلوله‌ی بمب با ظاهر و انفجار اختصاصی
+# ═══════════════════════════════════════════════════════════════════════════
+
+class Bomb(Bullet):
+    """بمب Bombardier — آروم، درخشان، با فیوز و انفجار."""
+
+    def __init__(self, x, y, vx=0, vy=100, *, scene=None, kind=None):
+        super().__init__(
+            x, y, vx, vy,
+            friendly=False,
+            kind=kind or BulletKind.ENEMY,
+            scene=scene,
+            life=4.0,
+        )
+        self._bomb_age = 0.0
+        self._bomb_rotation = 0.0
+
+    def update_entity(self, dt: float) -> None:
+        super().update_entity(dt)
+        self._bomb_age += dt
+        self._bomb_rotation += dt * 3.0
+
+    def draw_entity(self, surface: pygame.Surface) -> None:
+        # ---- محاسبه‌ی alpha (نزدیک انفجار قرمزتر می‌شه) ----
+        warn = min(1.0, self._bomb_age / 3.0)
+        pulse = 0.5 + 0.5 * math.sin(self._bomb_age * 15)
+
+        cx, cy = self.pos_int
+
+        # ---- هاله‌ی نارنجی بزرگ ----
+        glow_r = int(14 + 8 * pulse * warn)
+        for rr in range(glow_r, 0, -2):
+            a = int(120 * (1 - rr / glow_r) * (0.5 + warn * 0.5))
+            if a > 0:
+                g = pygame.Surface((rr * 4, rr * 4), pygame.SRCALPHA)
+                pygame.draw.circle(g, (255, 150, 60, a), (rr * 2, rr * 2), rr)
+                surface.blit(g, (cx - rr * 2, cy - rr * 2),
+                             special_flags=pygame.BLEND_RGBA_ADD)
+
+        # ---- بدنه‌ی بمب (بیضی چرخان) ----
+        body_r = 8
+        # سایه
+        pygame.draw.circle(surface, (20, 20, 30), (cx + 1, cy + 1), body_r)
+        # بدنه
+        pygame.draw.circle(surface, (40, 40, 55), (cx, cy), body_r)
+        # حلقه‌ی روشن
+        pygame.draw.circle(surface, (255, 130, 40), (cx, cy), body_r, 2)
+        # خط عمودی روی بمب (شکاف)
+        pygame.draw.line(surface, (255, 200, 100),
+                         (cx, cy - body_r + 2), (cx, cy + body_r - 2), 1)
+
+        # ---- فیوز بالای بمب (با جرقه) ----
+        fuse_y = cy - body_r - 4
+        pygame.draw.line(surface, (100, 100, 80),
+                         (cx, cy - body_r), (cx, fuse_y), 2)
+
+        # جرقه‌ی فیوز (رنگ با پالس)
+        spark_r = int(2 + 2 * pulse)
+        spark_color = (255, int(180 + 75 * pulse), int(80 + 100 * pulse))
+        for rr in range(spark_r * 3, 0, -1):
+            a = int(200 * (1 - rr / (spark_r * 3)))
+            if a > 0:
+                g = pygame.Surface((rr * 4, rr * 4), pygame.SRCALPHA)
+                pygame.draw.circle(g, (*spark_color, a), (rr * 2, rr * 2), rr)
+                surface.blit(g, (cx - rr * 2, fuse_y - rr * 2),
+                             special_flags=pygame.BLEND_RGBA_ADD)
+        pygame.draw.circle(surface, spark_color, (cx, fuse_y), spark_r)
+        pygame.draw.circle(surface, (255, 255, 255), (cx, fuse_y), max(1, spark_r // 2))
+
+        # ---- نشانگر انفجار نزدیک ----
+        if warn > 0.7:
+            progress = (warn - 0.7) / 0.3
+            ring_r = int(15 + progress * 10)
+            pygame.draw.circle(surface, (255, 80, 40),
+                               (cx, cy), ring_r, 2)
+
+    def on_death(self) -> None:
+        """انفجار بمب هنگام از بین رفتن."""
+        if self.scene is not None:
+            try:
+                from systems.particles import ParticleKind
+                # ذرات انفجار نارنجی
+                self.scene.particles.emit_burst(
+                    self.x, self.y,
+                    count=18,
+                    color_start=(255, 240, 180),
+                    color_end=(255, 60, 20),
+                    speed_min=100, speed_max=320,
+                    life_min=0.3, life_max=0.7,
+                    size_min=2, size_max=5,
+                    kind=ParticleKind.SPARK,
+                    additive=True,
+                )
+                # حلقه‌ی انفجار
+                self.scene.particles.emit_ring(
+                    self.x, self.y,
+                    count=14, radius=6, speed=240,
+                    color=(255, 180, 80), life=0.4, size=2,
+                )
+            except Exception:
+                pass
+
+
+__all__ = ["Bullet", "BulletKind", "Bomb"]

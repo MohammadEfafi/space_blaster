@@ -21,18 +21,21 @@ entities/enemies
 
 from entities.enemies.base import Enemy, EnemyKind
 from entities.enemies.boss_base import BossBase
-from entities.enemies.boss_void_sentinel import VoidSentinel
-from entities.enemies.boss_omega import OmegaCore
 from entities.enemies.boss_dreadnought import IronDreadnought
+from entities.enemies.boss_omega import OmegaCore
+from entities.enemies.boss_void_sentinel import VoidSentinel
 from entities.enemies.boss_wraith import PlasmaWraith
+from entities.enemies.bombardier import BombardierEnemy
 from entities.enemies.factory import EnemyFactory
 from entities.enemies.normal import NormalEnemy
+from entities.enemies.specter import SpecterEnemy
 from entities.enemies.spiral import SpiralEnemy
 from entities.enemies.tank import TankEnemy
 
 __all__ = [
     "Enemy", "EnemyKind",
     "NormalEnemy", "TankEnemy", "SpiralEnemy",
-    "BossBase", "VoidSentinel", "IronDreadnought", "PlasmaWraith",
-    "EnemyFactory","OmegaCore",
+    "SpecterEnemy", "BombardierEnemy",
+    "BossBase", "VoidSentinel", "IronDreadnought", "PlasmaWraith", "OmegaCore",
+    "EnemyFactory",
 ]

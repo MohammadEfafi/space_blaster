@@ -50,6 +50,8 @@ class EnemyKind(Enum):
     TANK   = auto()
     SPIRAL = auto()
     BOSS   = auto()
+    SPECTER = auto()
+    BOMBARDIER = auto()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
