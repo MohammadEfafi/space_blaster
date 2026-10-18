@@ -410,6 +410,13 @@ class PlasmaWraith(BossBase):
         # ---- ۹. نوار HP ----
         if self.hp < self.max_hp:
             self._draw_hp_bar(surface, cx, cy, r)
+            
+    def get_hitcircles(self):
+        """یک hitbox بزرگ‌تر که با بدن شبح هماهنگه."""
+        r = self.radius
+        return [
+            (self.x, self.y, r * 1.3),
+        ]
 
 
 __all__ = ["PlasmaWraith"]

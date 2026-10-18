@@ -375,6 +375,19 @@ class IronDreadnought(BossBase):
         # ---- ۱۱. نوار HP ----
         if self.hp < self.max_hp:
             self._draw_hp_bar(surface, cx, cy, r)
+            
+
+    def get_hitcircles(self):
+        """
+        چند hitbox برای پوشش بال‌های پهن.
+        بدن مرکزی + دو بال کناری.
+        """
+        r = self.radius
+        return [
+            (self.x, self.y, r * 1.1),                # بدن اصلی (کمی بزرگ‌تر)
+            (self.x - r * 1.4, self.y, r * 0.55),     # بال چپ
+            (self.x + r * 1.4, self.y, r * 0.55),     # بال راست
+        ]
 
 
 __all__ = ["IronDreadnought"]
