@@ -81,13 +81,15 @@ class WaveAnnouncement:
     def __init__(self) -> None:
         self.wave: int = 0
         self.is_boss: bool = False
+        self.is_elite: bool = False
         self.t: float = 0.0
         self.duration: float = _Timing.ANNOUNCE_DURATION
         self.active: bool = False
 
-    def start(self, wave: int, *, is_boss: bool = False) -> None:
+    def start(self, wave: int, *, is_boss: bool = False, is_elite: bool = False) -> None:
         self.wave = wave
         self.is_boss = is_boss
+        self.is_elite = is_elite
         self.t = 0.0
         self.active = True
 
@@ -116,6 +118,9 @@ class WaveAnnouncement:
         if self.is_boss:
             color = S.Palette.ENEMY_BOSS
             text = f"!!  BOSS WAVE {self.wave}  !!"
+        elif self.is_elite:
+            color = (255, 150, 100)
+            text = f"ELITE WAVE {self.wave:02d}"
         else:
             color = S.Palette.HUD_ACCENT
             text = f"WAVE {self.wave:02d}"
@@ -242,8 +247,9 @@ class Spawner:
         self.announcement = WaveAnnouncement()
 
         # --- فلگ‌ها ---
-        self.finished: bool = False    # اگر به سقف موج رسیدیم
+        self.finished: bool = False
         self.is_boss_wave: bool = False
+        self.is_elite_wave: bool = False
 
     # ─────────────────────────────────────────────────────────────────────
     #  API عمومی
@@ -275,15 +281,15 @@ class Spawner:
     # ─────────────────────────────────────────────────────────────────────
 
     def _enemy_count_for_wave(self, wave: int) -> int:
-        """تعداد دشمن‌های این موج با فرمول رشد تدریجی."""
+        """تعداد دشمن‌های این موج — با سقف برای جلوگیری از شلوغی."""
         base = S.WaveCfg.FIRST_ENEMIES
         growth = S.WaveCfg.GROWTH
-        # رشد خطی برای موج‌های پایین، سپس کمی تندتر
         count = base + growth * (wave - 1)
-        # موج‌های بالاتر یه ضریب کوچیک می‌خورن
+        # رشد ملایم‌تر بعد از موج ۸
         if wave > 8:
-            count = int(count * (1.0 + (wave - 8) * 0.08))
-        return max(3, count)
+            count = int(count * (1.0 + (wave - 8) * 0.04))
+        # سقف 19 دشمن (قبلاً بی‌نهایت بود)
+        return max(3, min(count, 19))
 
     def _spawn_interval_for_wave(self, wave: int) -> float:
         """فاصله بین spawn تدریجاً کوتاه‌تر می‌شود (تا حد مشخص)."""
@@ -319,18 +325,27 @@ class Spawner:
         """موج جدید را راه‌اندازی می‌کند."""
         self.wave += 1
 
-        # سقف موج
         if self.max_wave > 0 and self.wave > self.max_wave:
             self.finished = True
             self.state = SpawnState.IDLE
             return
 
+        # ---- اول باس (چون random داره) ----
         self.is_boss_wave = self._is_boss_wave(self.wave)
 
-        # تعداد
+        # ---- بعد الیت (فقط اگه باس نیست) ----
+        self.is_elite_wave = (
+            not self.is_boss_wave
+            and self.wave >= 4
+            and self.wave % 4 == 0
+        )
+
+        # ---- تعداد ----
         if self.is_boss_wave:
-            # موج باس: فقط باس (بدون دشمن اضافی)
             self.total_in_wave = 0
+        elif self.is_elite_wave:
+            # الیت: فقط ۲-۳ دشمن (نه بیشتر)
+            self.total_in_wave = random.randint(2, 3)
         else:
             self.total_in_wave = self._enemy_count_for_wave(self.wave)
 
@@ -338,11 +353,14 @@ class Spawner:
         self._spawn_timer = 0.0
         self._state_timer = 0.0
 
-        # نمایش پیام
+        # ---- پیام ----
         self.state = SpawnState.ANNOUNCING
-        self.announcement.start(self.wave, is_boss=self.is_boss_wave)
+        self.announcement.start(
+            self.wave,
+            is_boss=self.is_boss_wave,
+            is_elite=self.is_elite_wave,
+        )
 
-        # صدای شروع موج
         if self.scene is not None:
             try:
                 self.scene.audio.play("wave_start")
@@ -352,10 +370,15 @@ class Spawner:
     def _spawn_one(self) -> None:
         """یک دشمن از موج فعلی می‌سازد."""
         try:
-            enemy = self.factory.spawn(self.wave)
+            if self.is_elite_wave:
+                # الیت: بین دو نوع
+                from entities.enemies.base import EnemyKind
+                kind = random.choice([EnemyKind.SPECTER, EnemyKind.BOMBARDIER])
+                enemy = self.factory.spawn(self.wave, kind=kind)
+            else:
+                enemy = self.factory.spawn(self.wave)
             self._spawn_enemy(enemy)
         except Exception as exc:
-            # در صورت بروز خطا، فقط لاگ می‌کنیم
             print(f"[Spawner] Failed to spawn enemy: {exc}")
 
     def _spawn_boss(self) -> None:
@@ -505,21 +528,25 @@ class Spawner:
 
     # ── وضعیت: تولید دشمن ----
     def _update_spawning(self, dt: float) -> None:
-        # ---- موج باس: فقط باس ----
+        # ---- موج باس ----
         if self.is_boss_wave:
             self._spawn_boss()
             self.state = SpawnState.FIGHTING
             self._state_timer = 0.0
             return
 
-        interval = self._spawn_interval_for_wave(self.wave)
+        # ---- موج الیت: کندتر، با فاصله‌ی بیشتر ----
+        if self.is_elite_wave:
+            interval = 1.2  # ۱.۲ ثانیه بین هر الیت
+        else:
+            interval = self._spawn_interval_for_wave(self.wave)
 
         self._spawn_timer -= dt
         if self._spawn_timer <= 0.0:
             if self.remaining_to_spawn > 0:
                 self._spawn_one()
                 self.remaining_to_spawn -= 1
-                self._spawn_timer = interval * random.uniform(0.75, 1.25)
+                self._spawn_timer = interval * random.uniform(0.85, 1.15)
 
         if self.remaining_to_spawn <= 0:
             self.state = SpawnState.FIGHTING

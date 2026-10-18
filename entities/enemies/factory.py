@@ -35,6 +35,8 @@ from entities.enemies.base import Enemy, EnemyKind
 from entities.enemies.normal import NormalEnemy
 from entities.enemies.spiral import SpiralEnemy
 from entities.enemies.tank import TankEnemy
+from entities.enemies.specter import SpecterEnemy
+from entities.enemies.bombardier import BombardierEnemy
 
 if TYPE_CHECKING:
     from scenes.gameplay import GameplayScene
@@ -48,6 +50,8 @@ _KIND_TO_CLASS: dict[EnemyKind, type[Enemy]] = {
     EnemyKind.NORMAL: NormalEnemy,
     EnemyKind.TANK:   TankEnemy,
     EnemyKind.SPIRAL: SpiralEnemy,
+    EnemyKind.SPECTER: SpecterEnemy,
+    EnemyKind.BOMBARDIER: BombardierEnemy,
 }
 
 
