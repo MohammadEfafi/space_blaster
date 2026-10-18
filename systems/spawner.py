@@ -213,9 +213,10 @@ class Spawner:
         spawn_enemy: Optional[Callable[[Enemy], None]] = None,
         boss_every: int = 5,
         max_wave: int = 0,
-        boss_min_wave: int = 4,
+        boss_min_wave: int = 7,
     ) -> None:
         self.boss_min_wave: int = boss_min_wave
+        self._last_boss_wave: int = 0 
         self.scene = scene
         self.factory = EnemyFactory(scene)
 
@@ -291,12 +292,24 @@ class Spawner:
         return max(0.12, base - speedup)
 
     def _is_boss_wave(self, wave: int) -> bool:
-        """موج باس با شانس رندوم — متعادل."""
+        """موج باس با شانس رندوم — کم و فاصله‌دار."""
+        # حداقل ۷ موج قبل از اولین باس
         if wave < self.boss_min_wave:
             return False
-        # شانس کمتر: 25% در موج 5، تدریجاً بیشتر
-        chance = min(0.6, 0.25 + (wave - self.boss_min_wave) * 0.05)
-        return random.random() < chance
+
+        # بعد از هر باس، حداقل ۳ موج فاصله
+        if self._last_boss_wave > 0:
+            if wave - self._last_boss_wave < 3:
+                return False
+
+        # شانس خیلی کم: ۱۵% پایه، حداکثر ۴۵%
+        chance = min(0.45, 0.15 + (wave - self.boss_min_wave) * 0.04)
+        result = random.random() < chance
+
+        if result:
+            self._last_boss_wave = wave
+
+        return result
 
     # ─────────────────────────────────────────────────────────────────────
     #  جریان موج
