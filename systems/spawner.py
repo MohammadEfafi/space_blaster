@@ -346,21 +346,38 @@ class Spawner:
             print(f"[Spawner] Failed to spawn enemy: {exc}")
 
     def _spawn_boss(self) -> None:
-        """ساخت ۱ تا ۳ باس رندوم در موقعیت‌های امن."""
+        """ساخت ۱ تا ۳ باس رندوم (یا Omega از موج ۱۰+)."""
         try:
-            from entities.enemies.boss_registry import BOSS_CLASSES
+            from entities.enemies.boss_registry import (
+                BOSS_CLASSES, OMEGA_CLASS, get_random_boss,
+            )
             if not BOSS_CLASSES:
                 return
         except Exception as exc:
             print(f"[Spawner] Boss registry missing: {exc}")
             return
 
-        count = self._pick_boss_count()
-        positions = self._compute_boss_positions(count)
+        # ---- شانس Omega (فقط از موج ۱۰) ----
+        omega_chance = 0.0
+        if self.wave >= 10:
+            omega_chance = min(0.35, 0.10 + (self.wave - 10) * 0.04)
 
-        for (x, sway, phase_offset) in positions:
+        if random.random() < omega_chance:
+            # Omega تنها می‌آید
+            boss_classes = [OMEGA_CLASS]
+            print(f"[Spawner] OMEGA CORE boss incoming!")
+        else:
+            # حالت عادی: ۱-۳ باس
+            count = self._pick_boss_count()
+            boss_classes = [get_random_boss() for _ in range(count)]
+
+        positions = self._compute_boss_positions(len(boss_classes))
+
+        for i, (x, sway, phase_offset) in enumerate(positions):
+            if i >= len(boss_classes):
+                break
+            boss_cls = boss_classes[i]
             try:
-                boss_cls = random.choice(BOSS_CLASSES)
                 boss = boss_cls(x, -150, scene=self.scene)
                 boss.set_entry(-150, 0)
                 boss.sway_amplitude = sway
@@ -369,8 +386,8 @@ class Spawner:
             except Exception as exc:
                 print(f"[Spawner] Boss spawn failed ({x:.0f}): {exc}")
 
-        # ریختن پاورآپ روی نقشه
-        self._drop_boss_wave_powerups(count)
+        # ریختن پاورآپ
+        self._drop_boss_wave_powerups(len(boss_classes))
 
     def _drop_boss_wave_powerups(self, boss_count: int) -> None:
         """پاورآپ زیاد هنگام شروع باس."""
