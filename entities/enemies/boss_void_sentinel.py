@@ -440,6 +440,14 @@ class VoidSentinel(BossBase):
                 draw_line_alpha(surface, (220, 150, 255, line_alpha),
                                 (prev_x, prev_y), (bx, by), line_width)
                 prev_x, prev_y = bx, by
+                
+                
+    def get_hitcircles(self):
+        """بدن اصلی، کمی بزرگ‌تر."""
+        r = self.radius
+        return [
+            (self.x, self.y, r * 1.15),
+        ]
 
 
 __all__ = ["VoidSentinel"]

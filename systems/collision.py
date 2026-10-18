@@ -421,8 +421,13 @@ class CollisionSystem:
             x=enemy.x, y=enemy.y,
         ))
 
-        # دشمن kamikaze نابود می‌شود
-        enemy.kill()
+        # باس‌ها از برخورد با پلیر نمی‌میرن
+        from entities.enemies.boss_base import BossBase
+        is_boss = isinstance(enemy, BossBase)
+
+        if not is_boss:
+            # دشمن معمولی: kamikaze
+            enemy.kill()
 
         # آسیب به پلیر
         try:
@@ -430,7 +435,7 @@ class CollisionSystem:
         except Exception:
             pass
 
-        # لرزش شدید
+        # لرزش
         if self.scene is not None:
             try:
                 self.scene.camera.shake(S.FxCfg.SHAKE_ON_HIT)
