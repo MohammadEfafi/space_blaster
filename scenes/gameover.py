@@ -481,7 +481,7 @@ class GameOverScene(Scene):
         # زیرعنوان: اگر رکورد جدید بوده
         if self.is_new_high and alpha > 0.5:
             pulse = 1.0 + 0.08 * math.sin(self._t * 5.0)
-            sub_img = self.font_sub.render("★ NEW HIGH SCORE ★", True, S.Palette.YELLOW)
+            sub_img = self.font_sub.render("<< NEW HIGH SCORE >>", True, S.Palette.YELLOW)
             w2 = int(sub_img.get_width() * pulse)
             h2 = int(sub_img.get_height() * pulse)
             sub_scaled = pygame.transform.smoothscale(sub_img, (w2, h2))
