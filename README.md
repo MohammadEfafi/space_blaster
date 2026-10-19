@@ -11,3 +11,6 @@ A top-down space shooter built with Python and Pygame.
 ```bash
 pip install -r requirements.txt
 python main.py
+
+
+Built with Python and Pygame.
