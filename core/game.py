@@ -222,17 +222,9 @@ class Game:
     # ─────────────────────────────────────────────────────────────────────
 
     def _toggle_fullscreen(self) -> None:
-        """
-        تاگل بین حالت پنجره‌ای و تمام‌صفحه.
-
-        نکته‌ی کلیدی: حتماً pygame.SCALED باید در flags باشه. این باعث
-        می‌شه رزولوشن منطقی (900x650) حفظ بشه ولی تصویر خودکار به اندازه‌ی
-        صفحه‌ی واقعی مقیاس داده بشه. بدون SCALED، تصویر فقط گوشه‌ی
-        بالا-چپ می‌مونه.
-        """
+        """راه‌حل جایگزین: ری‌استارت display برای تغییر حالت."""
         self._is_fullscreen = not self._is_fullscreen
 
-        # SCALED باید همیشه باشه — چه در حالت fullscreen، چه windowed
         flags = pygame.SCALED
         if self._is_fullscreen:
             flags |= pygame.FULLSCREEN
@@ -240,16 +232,15 @@ class Game:
             flags |= pygame.RESIZABLE
 
         try:
+            pygame.display.quit()
+            pygame.display.init()
             self.screen = pygame.display.set_mode(
                 (S.Window.WIDTH, S.Window.HEIGHT),
                 flags,
                 vsync=S.Window.VSYNC,
             )
-        except pygame.error:
-            self.screen = pygame.display.set_mode(
-                (S.Window.WIDTH, S.Window.HEIGHT),
-                flags,
-            )
+        except pygame.error as e:
+            print(f"[Game] Fullscreen toggle failed: {e}")
 
     # ─────────────────────────────────────────────────────────────────────
     #  خروج تمیز

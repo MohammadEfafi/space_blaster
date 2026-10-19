@@ -28,6 +28,8 @@ import sys
 import traceback
 from pathlib import Path
 
+# ---- کیفیت smooth برای pygame.SCALED ----
+os.environ["SDL_RENDER_SCALE_QUALITY"] = "1"   # 1=linear, 2=anisotropic
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  ①  بررسی پیش‌نیازهای اجرا
