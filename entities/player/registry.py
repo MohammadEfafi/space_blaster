@@ -112,25 +112,25 @@ SHIP_INFO: dict[str, ShipInfo] = {
         name="INTERCEPTOR",
         description="Fast and fragile. Outspeed them or die trying.",
         role="ASSAULT",
-        speed=5,
-        hp=2,
-        fire_rate=5,
-        damage=3,
-        agility=5,
+        speed=5,        # SPEED=480 (سریع‌ترین)
+        hp=3,           # MAX_HP=3
+        fire_rate=5,    # SHOOT_CD=0.07 (سریع‌ترین)
+        damage=2,       # 1 damage (2 با pierce)
+        agility=5,      # ACCEL=14 (چابک‌ترین)
         color=Interceptor.PRIMARY_COLOR,
         accent=Interceptor.ACCENT_COLOR,
-        difficulty="HARD",
+        difficulty="HARD",       # بدون pierce، شکننده‌ست
     ),
     "vanguard": ShipInfo(
         key="vanguard",
         name="VANGUARD",
         description="Heavy armor, slow pace. Stand your ground.",
         role="DEFENSE",
-        speed=2,
-        hp=5,
-        fire_rate=3,
-        damage=4,
-        agility=2,
+        speed=2,        # SPEED=260 (کندترین)
+        hp=6,           # MAX_HP=6 (نمایش 5 - سقف نوار)
+        fire_rate=4,    # SHOOT_CD=0.15
+        damage=3,       # 1 damage × 2 گلوله = 2
+        agility=2,      # ACCEL=6
         color=Vanguard.PRIMARY_COLOR,
         accent=Vanguard.ACCENT_COLOR,
         difficulty="EASY",
@@ -140,11 +140,11 @@ SHIP_INFO: dict[str, ShipInfo] = {
         name="PHANTOM",
         description="Balanced power with a taste of the void.",
         role="ARCANE",
-        speed=4,
-        hp=2,             
-        fire_rate=3,      
-        damage=3,         
-        agility=4,
+        speed=3,        # SPEED=360
+        hp=2,           # MAX_HP=2
+        fire_rate=3,    # SHOOT_CD=0.18
+        damage=4,       # 1 damage × 3 گلوله = 3
+        agility=4,      # ACCEL=10
         color=Phantom.PRIMARY_COLOR,
         accent=Phantom.ACCENT_COLOR,
         difficulty="HARD",
@@ -154,11 +154,11 @@ SHIP_INFO: dict[str, ShipInfo] = {
         name="DEVASTATOR",
         description="Every shot is a statement. Make them count.",
         role="HEAVY",
-        speed=2,
-        hp=4,
-        fire_rate=2,
-        damage=5,
-        agility=2,
+        speed=2,        # SPEED=290
+        hp=4,           # MAX_HP=4
+        fire_rate=3,    # SHOOT_CD=0.22
+        damage=5,       # BULLET_DAMAGE=3 (بالاترین per-hit)
+        agility=2,      # ACCEL=5.5
         color=Devastator.PRIMARY_COLOR,
         accent=Devastator.ACCENT_COLOR,
         difficulty="NORMAL",

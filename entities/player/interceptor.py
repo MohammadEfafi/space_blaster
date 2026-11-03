@@ -3,62 +3,46 @@ entities/player/interceptor.py
 ==============================
 
 سفینه‌ی INTERCEPTOR — رهگیر سریع و شکننده.
-
-سبک بازی:
-    • سریع‌ترین سفینه
-    • کم‌ترین HP (۲)
-    • شلیک سریع ولی ضعیف
-    • مناسب بازیکن‌های تهاجمی که با فرار زنده می‌مونن
-
-ظاهر:
-    بدنه‌ی کشیده و تیز رو به جلو، بال‌های پهن پیکانی،
-    دو موتور تکی کناری، رنگ آبی فیروزه‌ای.
 """
 
 from __future__ import annotations
 
+import math
+
 import pygame
 
 from core import settings as S
-from entities.bullet import BulletKind
+from entities.bullet import Bullet, BulletKind
 from entities.player.base import Player
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  کلاس Interceptor
-# ═══════════════════════════════════════════════════════════════════════════
 
 class Interceptor(Player):
     """رهگیر سریع — سبک، تیز، تهاجمی."""
 
-    # ---- شناسه ----
     NAME        = "INTERCEPTOR"
     DESCRIPTION = "Fast and fragile. Outspeed them or die trying."
     KIND_KEY    = "interceptor"
 
-    # ---- آمار (سبک و سریع) ----
-    MAX_HP:        int   = 2
-    SPEED:         float = 480.0       # خیلی سریع
-    RADIUS:        float = 18.0        # کوچیک‌تر
-    INVULN_TIME:   float = 1.8
-    SHOOT_CD:      float = 0.10        # سریع شلیک
+    MAX_HP:        int   = 3
+    SPEED:         float = 480.0
+    RADIUS:        float = 18.0
+    INVULN_TIME:   float = 2.0
+    SHOOT_CD:      float = 0.07
     BULLET_SPEED:  float = 900.0
     BULLET_DAMAGE: int   = 1
     BULLET_KIND:   BulletKind = BulletKind.LASER
 
-    # فیزیک تیز و پاسخ‌گو
     ACCEL: float = 14.0
     DRAG:  float = 9.5
 
-    # ---- رنگ‌ها ----
-    PRIMARY_COLOR:   tuple[int, int, int] = (60, 220, 255)     # فیروزه‌ای
+    PRIMARY_COLOR:   tuple[int, int, int] = (60, 220, 255)
     SECONDARY_COLOR: tuple[int, int, int] = (30, 100, 160)
-    ACCENT_COLOR:    tuple[int, int, int] = (255, 240, 100)    # زرد
+    ACCENT_COLOR:    tuple[int, int, int] = (255, 240, 100)
     HIGHLIGHT_COLOR: tuple[int, int, int] = (235, 245, 255)
-    FLAME_COLOR:     tuple[int, int, int] = (100, 200, 255)    # شعله‌ی آبی
+    FLAME_COLOR:     tuple[int, int, int] = (100, 200, 255)
 
     # ─────────────────────────────────────────────────────────────────────
-    #  موتور: دو موتور کنار هم (نه سه‌گانه)
+    #  موتور
     # ─────────────────────────────────────────────────────────────────────
 
     def get_engine_offsets(self) -> list[tuple[float, float, float]]:
@@ -68,7 +52,7 @@ class Interceptor(Player):
         ]
 
     # ─────────────────────────────────────────────────────────────────────
-    #  رسم بدنه — رهگیر تیز
+    #  رسم بدنه
     # ─────────────────────────────────────────────────────────────────────
 
     def draw_ship(self, surface: pygame.Surface, cx: int, cy: int) -> None:
@@ -78,7 +62,7 @@ class Interceptor(Player):
         highlight = self.HIGHLIGHT_COLOR
         accent = self.ACCENT_COLOR
 
-        # ---- ۱. سایه‌ی زیر (عمق) ----
+        # ---- ۱. سایه‌ی زیر ----
         shadow_pts = [
             (cx,                  cy - int(r * 1.25) + 2),
             (cx - int(r * 1.30),  cy + int(r * 0.55) + 2),
@@ -87,14 +71,12 @@ class Interceptor(Player):
         pygame.draw.polygon(surface, (5, 30, 60), shadow_pts)
 
         # ---- ۲. بال‌های تیز پیکانی ----
-        # بال چپ
         left_wing = [
-            (cx - int(r * 0.35), cy - int(r * 0.30)),   # بالا-داخلی
-            (cx - int(r * 1.30), cy + int(r * 0.15)),   # نوک چپ
-            (cx - int(r * 1.10), cy + int(r * 0.55)),   # پایین-چپ
-            (cx - int(r * 0.30), cy + int(r * 0.45)),   # پایین-داخلی
+            (cx - int(r * 0.35), cy - int(r * 0.30)),
+            (cx - int(r * 1.30), cy + int(r * 0.15)),
+            (cx - int(r * 1.10), cy + int(r * 0.55)),
+            (cx - int(r * 0.30), cy + int(r * 0.45)),
         ]
-        # بال راست (آینه)
         right_wing = [(cx + (cx - x), y) for (x, y) in left_wing]
 
         pygame.draw.polygon(surface, secondary, left_wing)
@@ -111,19 +93,19 @@ class Interceptor(Player):
                 1,
             )
 
-        # ---- ۴. بدنه‌ی اصلی — کشیده و تیز ----
+        # ---- ۴. بدنه‌ی اصلی ----
         hull = [
-            (cx,                  cy - int(r * 1.25)),   # نوک
-            (cx - int(r * 0.35),  cy - int(r * 0.20)),   # چپ بالا
-            (cx - int(r * 0.45),  cy + int(r * 0.55)),   # چپ پایین
-            (cx,                  cy + int(r * 0.75)),   # دنباله‌ی وسط
+            (cx,                  cy - int(r * 1.25)),
+            (cx - int(r * 0.35),  cy - int(r * 0.20)),
+            (cx - int(r * 0.45),  cy + int(r * 0.55)),
+            (cx,                  cy + int(r * 0.75)),
             (cx + int(r * 0.45),  cy + int(r * 0.55)),
             (cx + int(r * 0.35),  cy - int(r * 0.20)),
         ]
         pygame.draw.polygon(surface, primary, hull)
         pygame.draw.polygon(surface, highlight, hull, 2)
 
-        # ---- ۵. نوار روشن مرکزی (نوک تیز) ----
+        # ---- ۵. نوار مرکزی ----
         stripe = [
             (cx,                  cy - int(r * 1.15)),
             (cx - int(r * 0.15),  cy - int(r * 0.20)),
@@ -131,7 +113,6 @@ class Interceptor(Player):
             (cx + int(r * 0.15),  cy - int(r * 0.20)),
         ]
         pygame.draw.polygon(surface, highlight, stripe)
-        # خط مرکزی نارنجی/زرد
         pygame.draw.line(
             surface, accent,
             (cx, cy - int(r * 1.05)),
@@ -139,13 +120,13 @@ class Interceptor(Player):
             2,
         )
 
-        # ---- ۶. کابین (روی draw_ship خودمون) ----
+        # ---- ۶. کابین ----
         cab_y = cy - int(r * 0.30)
         cab_r = max(2, int(r * 0.20))
         pygame.draw.circle(surface, accent, (cx, cab_y), cab_r + 1)
         pygame.draw.circle(surface, (255, 255, 220), (cx, cab_y), cab_r)
 
-        # ---- ۷. خطوط تزئینی روی بدنه ----
+        # ---- ۷. خطوط تزئینی ----
         for sign in (-1, 1):
             pygame.draw.line(
                 surface, secondary,
@@ -154,16 +135,55 @@ class Interceptor(Player):
                 1,
             )
 
-        # ---- ۸. رأس‌های درخشان بال‌ها ----
+        # ---- ۸. رأس‌های درخشان ----
         for sign in (-1, 1):
             tip_x = cx + sign * int(r * 1.25)
             tip_y = cy + int(r * 0.20)
             self._draw_tip_glow(surface, tip_x, tip_y, int(r * 0.15))
 
-        for sign in (-1, 1):
-            tip_x = cx + sign * int(r * 1.25)
-            tip_y = cy + int(r * 0.20)
-            self._draw_tip_glow(surface, tip_x, tip_y, int(r * 0.15))
+    # ─────────────────────────────────────────────────────────────────────
+    #  شلیک با pierce
+    # ─────────────────────────────────────────────────────────────────────
+
+    def try_shoot(self) -> list:
+        """شلیک با pierce — گلوله از ۲ دشمن رد می‌شه."""
+        if self.shoot_cd > 0.0 or not self.alive:
+            return []
+
+        self.shoot_cd = self.SHOOT_CD
+        self.muzzle_flash = 1.0
+        self.recoil = 0.6
+
+        bullets = []
+        for angle_deg in self._get_shot_angles():
+            a = math.radians(angle_deg)
+            vx = math.cos(a) * self.BULLET_SPEED
+            vy = math.sin(a) * self.BULLET_SPEED
+            ox = math.cos(a) * (self.radius + 6)
+            oy = math.sin(a) * (self.radius + 6)
+
+            b = Bullet(
+                self.x + ox, self.y + oy,
+                vx, vy,
+                friendly=True,
+                kind=self.BULLET_KIND,
+                damage=self.BULLET_DAMAGE,
+                scene=self.scene,
+                pierce=2,
+            )
+            bullets.append(b)
+
+        if self.scene is not None:
+            try:
+                self.scene.audio.play("player_shoot")
+            except Exception:
+                pass
+
+        return bullets
+
+    # ─────────────────────────────────────────────────────────────────────
+    #  نقطه‌ی درخشان رأس بال
+    # ─────────────────────────────────────────────────────────────────────
 
     def _draw_tip_glow(
         self,
@@ -175,7 +195,6 @@ class Interceptor(Player):
         size = max(2, size)
         accent = self.ACCENT_COLOR
 
-        # هاله
         glow = pygame.Surface((size * 4, size * 4), pygame.SRCALPHA)
         for rr in range(size * 2, 0, -1):
             a = int(120 * (1 - rr / (size * 2)))
@@ -186,8 +205,6 @@ class Interceptor(Player):
             glow, (x - size * 2, y - size * 2),
             special_flags=pygame.BLEND_RGBA_ADD,
         )
-
-        # نقطه‌ی مرکزی
         pygame.draw.circle(surface, (255, 255, 255), (x, y), max(1, size // 2))
 
 

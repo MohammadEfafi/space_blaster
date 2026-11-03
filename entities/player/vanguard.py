@@ -41,11 +41,11 @@ class Vanguard(Player):
     KIND_KEY    = "vanguard"
 
     # ---- آمار (سنگین و مقاوم) ----
-    MAX_HP:        int   = 5           # بیشترین جان
+    MAX_HP:        int   = 6           # بیشترین جان
     SPEED:         float = 260.0       # کند
     RADIUS:        float = 24.0        # بزرگ‌تر
     INVULN_TIME:   float = 1.4         # کمی کمتر (چون جان زیاد داره)
-    SHOOT_CD:      float = 0.22        # کندتر شلیک
+    SHOOT_CD:      float = 0.15        # کندتر شلیک
     BULLET_SPEED:  float = 680.0
     BULLET_DAMAGE: int   = 1
     BULLET_KIND:   BulletKind = BulletKind.PLAYER

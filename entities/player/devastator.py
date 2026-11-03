@@ -45,9 +45,9 @@ class Devastator(Player):
     SPEED:         float = 290.0
     RADIUS:        float = 24.0        # بزرگ
     INVULN_TIME:   float = 1.5
-    SHOOT_CD:      float = 0.32        # کند
+    SHOOT_CD:      float = 0.22        # کند
     BULLET_SPEED:  float = 620.0
-    BULLET_DAMAGE: int   = 2           # آسیب دوگانه
+    BULLET_DAMAGE: int   = 3           # آسیب دوگانه
     BULLET_KIND:   BulletKind = BulletKind.PLASMA  # گلوله‌ی درشت نارنجی
 
     # فیزیک سنگین (شتاب کم، میرایی زیاد — حس تانک)
