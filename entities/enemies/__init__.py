@@ -28,14 +28,18 @@ from entities.enemies.boss_wraith import PlasmaWraith
 from entities.enemies.bombardier import BombardierEnemy
 from entities.enemies.factory import EnemyFactory
 from entities.enemies.normal import NormalEnemy
+from entities.enemies.sentinel import SentinelEnemy
+from entities.enemies.serpent import SerpentEnemy
 from entities.enemies.specter import SpecterEnemy
 from entities.enemies.spiral import SpiralEnemy
 from entities.enemies.tank import TankEnemy
+from entities.enemies.titan import TitanEnemy
 
 __all__ = [
     "Enemy", "EnemyKind",
     "NormalEnemy", "TankEnemy", "SpiralEnemy",
     "SpecterEnemy", "BombardierEnemy",
+    "SentinelEnemy", "SerpentEnemy", "TitanEnemy",
     "BossBase", "VoidSentinel", "IronDreadnought", "PlasmaWraith", "OmegaCore",
     "EnemyFactory",
 ]

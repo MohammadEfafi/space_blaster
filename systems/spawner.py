@@ -43,7 +43,6 @@ from entities.enemies import Enemy, EnemyFactory
 if TYPE_CHECKING:
     from scenes.gameplay import GameplayScene
 
-
 # ═══════════════════════════════════════════════════════════════════════════
 #  وضعیت‌های Spawner
 # ═══════════════════════════════════════════════════════════════════════════
@@ -82,16 +81,16 @@ class WaveAnnouncement:
         self.wave: int = 0
         self.is_boss: bool = False
         self.is_elite: bool = False
+        self.is_advanced: bool = False
         self.t: float = 0.0
         self.duration: float = _Timing.ANNOUNCE_DURATION
         self.active: bool = False
 
-    def start(self, wave: int, *, is_boss: bool = False, is_elite: bool = False) -> None:
+    def start(self, wave: int, *, is_boss: bool = False, is_elite: bool = False, is_advanced: bool = False) -> None:
         self.wave = wave
         self.is_boss = is_boss
         self.is_elite = is_elite
-        self.t = 0.0
-        self.active = True
+        self.is_advanced = is_advanced
 
     def update(self, dt: float) -> None:
         if not self.active:
@@ -118,6 +117,9 @@ class WaveAnnouncement:
         if self.is_boss:
             color = S.Palette.ENEMY_BOSS
             text = f"!!  BOSS WAVE {self.wave}  !!"
+        elif self.is_advanced:
+            color = (255, 100, 255)  # بنفش
+            text = f"ADVANCED WAVE {self.wave:02d}"
         elif self.is_elite:
             color = (255, 150, 100)
             text = f"ELITE WAVE {self.wave:02d}"
@@ -250,6 +252,7 @@ class Spawner:
         self.finished: bool = False
         self.is_boss_wave: bool = False
         self.is_elite_wave: bool = False
+        self.is_advanced_wave: bool = False
 
     # ─────────────────────────────────────────────────────────────────────
     #  API عمومی
@@ -333,9 +336,20 @@ class Spawner:
         # ---- اول باس (چون random داره) ----
         self.is_boss_wave = self._is_boss_wave(self.wave)
 
-        # ---- بعد الیت (فقط اگه باس نیست) ----
+          # ---- موج پیشرفته (Advanced) ----
+        self.is_advanced_wave = False
+        if not self.is_boss_wave:
+            if self.wave == 20:
+                self.is_advanced_wave = True  # معرفی در لول ۲۰
+            elif self.wave > 20 and self.wave % 4 != 0:
+                # از لول ۲۱ به بعد با شانس ۲۵٪ (به جز موج‌های الیت)
+                if random.random() < 0.25:
+                    self.is_advanced_wave = True
+
+        # ---- بعد الیت (فقط اگه باس یا ادونس نیست) ----
         self.is_elite_wave = (
             not self.is_boss_wave
+            and not self.is_advanced_wave
             and self.wave >= 4
             and self.wave % 4 == 0
         )
@@ -343,9 +357,12 @@ class Spawner:
         # ---- تعداد ----
         if self.is_boss_wave:
             self.total_in_wave = 0
+        elif self.wave == 20:
+            self.total_in_wave = 3  # معرفی: دقیقا ۳ تا
+        elif self.is_advanced_wave:
+            self.total_in_wave = random.randint(3, 4)  # رندوم: ۳ یا ۴ تا
         elif self.is_elite_wave:
-            # الیت: فقط ۲-۳ دشمن (نه بیشتر)
-            self.total_in_wave = random.randint(2, 3)
+            self.total_in_wave = random.randint(5, 6)
         else:
             self.total_in_wave = self._enemy_count_for_wave(self.wave)
 
@@ -359,24 +376,55 @@ class Spawner:
             self.wave,
             is_boss=self.is_boss_wave,
             is_elite=self.is_elite_wave,
+            is_advanced=self.is_advanced_wave,
         )
 
+        # صدای شروع موج
         if self.scene is not None:
             try:
                 self.scene.audio.play("wave_start")
+                # افکت ویژه‌ی الیت
+                if self.is_elite_wave:
+                    self.scene.camera.shake(6.0)
+                    # فلاش قرمز-نارنجی
+                    from systems.particles import ParticleKind
+                    self.scene.particles.emit_ring(
+                        S.Window.WIDTH // 2, S.Window.HEIGHT // 2,
+                        count=30, radius=20, speed=400,
+                        color=(255, 150, 100), life=0.8, size=3,
+                    )
             except Exception:
                 pass
 
     def _spawn_one(self) -> None:
         """یک دشمن از موج فعلی می‌سازد."""
         try:
-            if self.is_elite_wave:
-                # الیت: بین دو نوع
-                from entities.enemies.base import EnemyKind
+            from entities.enemies.base import EnemyKind
+
+            if self.is_advanced_wave:
+                if self.wave == 20:
+                    # موج معرفی لول ۲۰: دقیقاً یکی از هر کدوم
+                    remaining = self.remaining_to_spawn
+                    if remaining >= 3:
+                        kind = EnemyKind.SENTINEL
+                    elif remaining == 2:
+                        kind = EnemyKind.SERPENT
+                    else:
+                        kind = EnemyKind.TITAN
+                else:
+                    # موج‌های بعدی: رندوم از بین ۳ تای جدید
+                    kind = random.choice([
+                        EnemyKind.SENTINEL,
+                        EnemyKind.SERPENT,
+                        EnemyKind.TITAN,
+                    ])
+                enemy = self.factory.spawn(self.wave, kind=kind)
+            elif self.is_elite_wave:
                 kind = random.choice([EnemyKind.SPECTER, EnemyKind.BOMBARDIER])
                 enemy = self.factory.spawn(self.wave, kind=kind)
             else:
                 enemy = self.factory.spawn(self.wave)
+
             self._spawn_enemy(enemy)
         except Exception as exc:
             print(f"[Spawner] Failed to spawn enemy: {exc}")
@@ -535,9 +583,12 @@ class Spawner:
             self._state_timer = 0.0
             return
 
-        # ---- موج الیت: کندتر، با فاصله‌ی بیشتر ----
-        if self.is_elite_wave:
-            interval = 1.2  # ۱.۲ ثانیه بین هر الیت
+        # ---- زمان‌بندی اسپاون ----
+        if self.is_advanced_wave:
+            # برای موج‌های ادونس کمی فاصله می‌دیم که کاربر گیج نشه
+            interval = 1.2
+        elif self.is_elite_wave:
+            interval = 0.45
         else:
             interval = self._spawn_interval_for_wave(self.wave)
 

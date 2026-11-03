@@ -45,13 +45,15 @@ if TYPE_CHECKING:
 # ═══════════════════════════════════════════════════════════════════════════
 
 class EnemyKind(Enum):
-    """انواع دشمن برای انتخاب در Factory و ثبت در Registry."""
     NORMAL = auto()
     TANK   = auto()
     SPIRAL = auto()
     BOSS   = auto()
     SPECTER = auto()
     BOMBARDIER = auto()
+    SENTINEL = auto()
+    SERPENT = auto()
+    TITAN = auto()
 
 
 # ═══════════════════════════════════════════════════════════════════════════

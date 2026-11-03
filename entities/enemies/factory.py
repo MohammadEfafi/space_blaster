@@ -37,6 +37,9 @@ from entities.enemies.spiral import SpiralEnemy
 from entities.enemies.tank import TankEnemy
 from entities.enemies.specter import SpecterEnemy
 from entities.enemies.bombardier import BombardierEnemy
+from entities.enemies.sentinel import SentinelEnemy
+from entities.enemies.serpent import SerpentEnemy
+from entities.enemies.titan import TitanEnemy
 
 if TYPE_CHECKING:
     from scenes.gameplay import GameplayScene
@@ -52,6 +55,9 @@ _KIND_TO_CLASS: dict[EnemyKind, type[Enemy]] = {
     EnemyKind.SPIRAL: SpiralEnemy,
     EnemyKind.SPECTER: SpecterEnemy,
     EnemyKind.BOMBARDIER: BombardierEnemy,
+    EnemyKind.SENTINEL: SentinelEnemy,
+    EnemyKind.SERPENT: SerpentEnemy,
+    EnemyKind.TITAN: TitanEnemy,
 }
 
 
@@ -202,9 +208,16 @@ class EnemyFactory:
 
     def _choose_kind(self, wave: int) -> EnemyKind:
         """انتخاب نوع دشمن با توزیع وزن‌دار."""
-        weights = self._weights_for_wave(wave)
+        # ---- از موج ۲۰: دشمن‌های جدید هم وارد می‌شن ----
+        if wave >= 20:
+            kinds = [
+                EnemyKind.NORMAL, EnemyKind.TANK, EnemyKind.SPIRAL,
+                EnemyKind.SENTINEL, EnemyKind.SERPENT, EnemyKind.TITAN,
+            ]
+            weights = [3, 3, 3, 2, 2, 1]
+            return random.choices(kinds, weights=weights, k=1)[0]
 
-        # اگر همه‌ی وزن‌ها صفر بودن، fallback به Normal
+        weights = self._weights_for_wave(wave)
         if sum(weights) <= 0:
             return EnemyKind.NORMAL
 
