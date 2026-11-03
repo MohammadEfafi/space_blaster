@@ -319,7 +319,7 @@ class GameplayScene(Scene):
         # (نشانگر «Press P to Pause» فقط برای چند ثانیه‌ی اول)
         if self.time < 20.0:
             img = self.font_hud_small.render(
-                "WASD/Arrows - move    |    SPACE - shoot    |    P - pause    |    F11 - fullscreen    |    ESC - quit",
+                "WASD/Arrows - move    |    SPACE - shoot    |    P - pause    |    F11 - fullscreen    |    ALT+TAB - minimize    |  ESC - quit    " ,
                 True, (200, 220, 255),
             )
             rect = img.get_rect(center=(S.Window.WIDTH // 2, S.Window.HEIGHT - 40))
