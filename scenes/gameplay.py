@@ -89,7 +89,11 @@ class GameplayScene(Scene):
         self.powerups: list[Powerup] = []
 
         # ---- Spawner ----
-        self.spawner = Spawner(self, spawn_enemy=self.add_enemy, boss_every=5)
+        self.spawner = Spawner(
+            self,
+            spawn_enemy=self.add_enemy,
+            boss_every=S.WaveCfg.BOSS_EVERY,
+        )
         self.spawner.start()
 
         # ---- وضعیت ----
@@ -99,7 +103,6 @@ class GameplayScene(Scene):
         self.game_over_pending: bool = False
         self.game_over_timer: float = 0.0    # مکث کوتاه قبل از رفتن به GameOver
         self.boss_defeated_timer: float = 0.0
-        self._shoot_was_held: bool = False
 
         # ---- HUD init ----
         self.hud.set_hp(self.player.hp, self.player.MAX_HP)
@@ -257,10 +260,23 @@ class GameplayScene(Scene):
         self.hud.set_wave(self.spawner.current_wave)
         self.hud.set_hp(self.player.hp, self.player.MAX_HP)
 
-        # نوار Power-Up
+        p_dur = S.PowerupCfg.DURATION
+        if hasattr(self.player, "POWERUP_MULTIPLIER"):
+            p_dur *= self.player.POWERUP_MULTIPLIER
+        rf_dur = p_dur  # rapid_fire و powerup هر دو از همون multiplier استفاده می‌کنن
+
         if self.player.powerup_time > 0:
-            ratio = self.player.powerup_time / S.PowerupCfg.DURATION
-            self.hud.set_powerup(ratio, S.Palette.POWERUP_CORE)
+            ratio = min(1.0, self.player.powerup_time / p_dur)
+            bar_color = S.Palette.POWERUP_CORE
+            self.hud.set_powerup(ratio, bar_color)
+        elif self.player.shield_time > 0:
+            ratio = min(1.0, self.player.shield_time / S.PowerupCfg.DURATION)
+            bar_color = (90, 220, 255)
+            self.hud.set_powerup(ratio, bar_color)
+        elif self.player.rapid_fire_time > 0:
+            ratio = min(1.0, self.player.rapid_fire_time / rf_dur)
+            bar_color = (255, 250, 120)
+            self.hud.set_powerup(ratio, bar_color)
         else:
             self.hud.set_powerup(0.0)
 

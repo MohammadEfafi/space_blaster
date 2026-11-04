@@ -289,23 +289,42 @@ class Bullet(Entity):
             surface.blit(tmp, (cx - size // 2, cy - size // 2))
 
     def _draw_trail(self, surface: pygame.Surface, base_alpha: int) -> None:
-        """رسم دنباله با شفافیت کاهشی."""
         if len(self._trail) < 2:
             return
-        # از قدیمی به جدید
+
         pts = list(self._trail)
         n = len(pts)
+
+        # bound box محاسبه کن
+        xs = [p[0] for p in pts]
+        ys = [p[1] for p in pts]
+        pad = self._trail_width + 4
+        min_x = int(min(xs)) - pad
+        min_y = int(min(ys)) - pad
+        max_x = int(max(xs)) + pad
+        max_y = int(max(ys)) + pad
+        w = max_x - min_x
+        h = max_y - min_y
+        if w <= 0 or h <= 0:
+            return
+
+        tmp = pygame.Surface((w, h), pygame.SRCALPHA)
         for i in range(n - 1):
             x1, y1 = pts[i]
             x2, y2 = pts[i + 1]
-            t = i / (n - 1)
+            t = (i + 1) / (n - 1)
             a = int(self._trail_alpha * t * (base_alpha / 255.0))
             if a <= 0:
                 continue
-            w = max(1, int(self._trail_width * t))
-            # برای سرعت بالا، از خط راست استفاده می‌کنیم (سریع‌تر از رسم روی SRCALPHA)
+            lw = max(1, int(self._trail_width * t))
             color = (*self._color_glow, a)
-            self._draw_line_alpha(surface, color, (x1, y1), (x2, y2), w)
+            pygame.draw.line(
+                tmp, color,
+                (int(x1 - min_x), int(y1 - min_y)),
+                (int(x2 - min_x), int(y2 - min_y)),
+                lw,
+            )
+        surface.blit(tmp, (min_x, min_y))
 
     def _draw_glow(self, surface: pygame.Surface, alpha: int) -> None:
         """رسم هاله‌ی نرم با استفاده از کش سطح."""
@@ -397,11 +416,11 @@ class Bullet(Entity):
 class Bomb(Bullet):
     """بمب Bombardier — آروم، درخشان، با فیوز و انفجار."""
 
-    def __init__(self, x, y, vx=0, vy=100, *, scene=None, kind=None):
+    def __init__(self, x, y, vx=0, vy=100, *, scene=None):
         super().__init__(
             x, y, vx, vy,
             friendly=False,
-            kind=kind or BulletKind.ENEMY,
+            kind=BulletKind.ENEMY,
             scene=scene,
             life=4.0,
         )

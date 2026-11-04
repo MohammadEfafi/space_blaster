@@ -66,6 +66,8 @@ class Phantom(Player):
     # ─────────────────────────────────────────────────────────────────────
     #  الگوی شلیک: سه‌گانه از ابتدا
     # ─────────────────────────────────────────────────────────────────────
+    def grant_rapid_fire(self, duration: float) -> None:
+        super().grant_rapid_fire(duration * self.POWERUP_MULTIPLIER)
 
     def _get_shot_angles(self) -> list[float]:
         """

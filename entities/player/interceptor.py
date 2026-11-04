@@ -150,7 +150,7 @@ class Interceptor(Player):
         if self.shoot_cd > 0.0 or not self.alive:
             return []
 
-        self.shoot_cd = self.SHOOT_CD
+        self.shoot_cd = self.current_shoot_cd
         self.muzzle_flash = 1.0
         self.recoil = 0.6
 

@@ -117,6 +117,7 @@ class Player(Entity):
 
         # ---- نامیرایی ----
         self.invuln_time: float = self.INVULN_TIME
+        self.shield_time: float = 0.0  
 
         # ---- Power-Up ----
         self.powerup_time: float = 0.0
@@ -127,7 +128,7 @@ class Player(Entity):
 
         # ---- زمان انیمیشن ----
         self._t: float = 0.0
-
+        self.rapid_fire_time: float = 0.0
     # ─────────────────────────────────────────────────────────────────────
     #  هوک‌های قابل Override
     # ─────────────────────────────────────────────────────────────────────
@@ -170,13 +171,16 @@ class Player(Entity):
     def update_entity(self, dt: float) -> None:
         self._t += dt
 
-        # ---- کاهش timers ----
         if self.shoot_cd > 0.0:
             self.shoot_cd -= dt
         if self.invuln_time > 0.0:
             self.invuln_time -= dt
+        if self.shield_time > 0.0:                                   # ← اضافه کن
+            self.shield_time = max(0.0, self.shield_time - dt)
         if self.powerup_time > 0.0:
             self.powerup_time -= dt
+        if self.rapid_fire_time > 0.0:                  
+            self.rapid_fire_time = max(0.0, self.rapid_fire_time - dt)
         if self.muzzle_flash > 0.0:
             self.muzzle_flash = max(0.0, self.muzzle_flash - dt * 6.0)
         if self.recoil > 0.0:
@@ -266,13 +270,9 @@ class Player(Entity):
     # ─────────────────────────────────────────────────────────────────────
 
     def try_shoot(self) -> list[Bullet]:
-        """
-        اگر آماده است، گلوله‌ها را برمی‌گرداند و cooldown را ست می‌کند.
-        """
         if self.shoot_cd > 0.0 or not self.alive:
             return []
-
-        self.shoot_cd = self.SHOOT_CD
+        self.shoot_cd = self.current_shoot_cd 
         self.muzzle_flash = 1.0
         self.recoil = 0.6
 
@@ -314,24 +314,28 @@ class Player(Entity):
         self.powerup_time = d
 
     def grant_shield(self, duration: float) -> None:
-        """پیش‌فرض: نامیرایی موقت (زیرکلاس‌ها می‌توانند Override کنند)."""
-        self.invuln_time = max(self.invuln_time, duration)
+        self.shield_time = max(self.shield_time, duration)
+    @property
+    def is_invulnerable(self) -> bool:
+        """آیا الان به هر دلیلی (invuln یا shield) آسیب‌ناپذیره؟"""
+        return self.invuln_time > 0.0 or self.shield_time > 0.0
+
+    @property
+    def current_shoot_cd(self) -> float:
+        """Cooldown فعلی — نصف می‌شه اگر Rapid Fire فعاله."""
+        if self.rapid_fire_time > 0.0:
+            return self.SHOOT_CD * 0.5
+        return self.SHOOT_CD
 
     def grant_rapid_fire(self, duration: float) -> None:
-        """پیش‌فرض: کاهش موقت cooldown — زیرکلاس می‌تواند Override کند."""
-        # فعلاً فقط half cooldown توسط flag موقت
-        if not hasattr(self, "_rapid_fire_time"):
-            self._rapid_fire_time = 0.0
-        self._rapid_fire_time = duration
-        self._rapid_fire_base_cd = self.SHOOT_CD
+        self.rapid_fire_time = max(self.rapid_fire_time, duration)
 
     # ─────────────────────────────────────────────────────────────────────
     #  آسیب
     # ─────────────────────────────────────────────────────────────────────
 
-    def take_damage(self, damage: int) -> bool:  # type: ignore[override]
-        """احترام به نامیرایی."""
-        if self.invuln_time > 0.0 or not self.alive:
+    def take_damage(self, damage: int) -> bool:
+        if self.is_invulnerable or not self.alive:
             return False
         return super().take_damage(damage)
 
@@ -382,22 +386,12 @@ class Player(Entity):
         if self.powerup_time > 0.0:
             self._draw_powerup_ring(surface, cx, cy)
 
+        if self.shield_time > 0.0:           # ← اضافه کن
+            self._draw_shield_aura(surface, cx, cy)
+
     # ─────────────────────────────────────────────────────────────────────
     #  اجزای رسم مشترک
     # ─────────────────────────────────────────────────────────────────────
-
-    def _draw_aura(self, surface: pygame.Surface, cx: int, cy: int) -> None:
-        r = int(self.radius * 1.6)
-        if r <= 0:
-            return
-        aura = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
-        c = self.PRIMARY_COLOR
-        for rr in range(r, 0, -2):
-            a = int(40 * (1 - rr / r) ** 1.4)
-            if a <= 0:
-                continue
-            pygame.draw.circle(aura, (c[0], c[1], c[2], a), (r, r), rr)
-        surface.blit(aura, (cx - r, cy - r), special_flags=pygame.BLEND_RGBA_ADD)
 
     def _draw_engine_flames(self, surface: pygame.Surface) -> None:
         r = self.radius
@@ -436,12 +430,6 @@ class Player(Entity):
             (x - int(w * 0.35), y), (x + int(w * 0.35), y),
             (x, y + int(length * 0.5)),
         ])
-
-    def _draw_cockpit(self, surface: pygame.Surface, cx: int, cy: int) -> None:
-        r = max(2, int(self.radius * 0.18))
-        y_off = int(self.radius * 0.35)
-        pygame.draw.circle(surface, self.ACCENT_COLOR, (cx, cy - y_off), r)
-        pygame.draw.circle(surface, (255, 255, 255), (cx, cy - y_off - 1), max(1, r - 2))
 
     def _draw_muzzle_flash(self, surface: pygame.Surface, cx: int, cy: int) -> None:
         a = self.muzzle_flash
@@ -505,7 +493,6 @@ class Player(Entity):
     # ─────────────────────────────────────────────────────────────────────
 
     def reset_to_start(self) -> None:
-        """بازگرداندن پلیر به موقعیت شروع (برای Restart)."""
         self.x = S.Window.WIDTH / 2
         self.y = S.Window.HEIGHT - S.PlayerCfg.RESPAWN_Y
         self.vx = 0.0
@@ -513,16 +500,24 @@ class Player(Entity):
         self.hp = self.MAX_HP
         self.invuln_time = self.INVULN_TIME
         self.powerup_time = 0.0
+        self.shield_time = 0.0          # ← اضافه
+        self.rapid_fire_time = 0.0      # ← اضافه
         self.shoot_cd = 0.0
         self.alive = True
 
-    @staticmethod
-    def darker(c: tuple[int, int, int], amount: int) -> tuple[int, int, int]:
-        return (max(0, c[0] - amount), max(0, c[1] - amount), max(0, c[2] - amount))
-
-    @staticmethod
-    def lighter(c: tuple[int, int, int], amount: int) -> tuple[int, int, int]:
-        return (min(255, c[0] + amount), min(255, c[1] + amount), min(255, c[2] + amount))
-
+    def _draw_shield_aura(self, surface: pygame.Surface, cx: int, cy: int) -> None:
+        """هاله‌ی محافظ آبی — کاملاً متمایز از aura نامیرایی."""
+        r = int(self.radius * 2.4)
+        if r <= 0:
+            return
+        pulse = 0.7 + 0.3 * math.sin(self._t * 5.0)
+        aura = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+        for rr in range(r, 0, -2):
+            a = int(60 * (1 - rr / r) * pulse)
+            if a <= 0:
+                continue
+            pygame.draw.circle(aura, (60, 180, 255, a), (r, r), rr)
+        surface.blit(aura, (cx - r, cy - r), special_flags=pygame.BLEND_RGBA_ADD)
+        pygame.draw.circle(surface, (100, 220, 255), (cx, cy), r - 4, 2)
 
 __all__ = ["Player"]

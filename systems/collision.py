@@ -338,7 +338,7 @@ class CollisionSystem:
         """گلوله‌های دشمن را با پلیر بررسی می‌کند."""
         if not bullets or player is None or not player.alive:
             return 0
-        if player.invuln_time > 0:
+        if player.is_invulnerable:
             return 0
 
         hits = 0
@@ -397,7 +397,7 @@ class CollisionSystem:
         """برخورد فیزیکی دشمن با پلیر (kamikaze)."""
         if not enemies or player is None or not player.alive:
             return 0
-        if player.invuln_time > 0:
+        if player.is_invulnerable:
             return 0
 
         hits = 0
