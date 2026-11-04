@@ -91,6 +91,8 @@ class WaveAnnouncement:
         self.is_boss = is_boss
         self.is_elite = is_elite
         self.is_advanced = is_advanced
+        self.active = True     # ← اضافه کن
+        self.t = 0.0           # ← اضافه کن
 
     def update(self, dt: float) -> None:
         if not self.active:
@@ -218,9 +220,9 @@ class Spawner:
         scene: Optional["GameplayScene"] = None,
         *,
         spawn_enemy: Optional[Callable[[Enemy], None]] = None,
-        boss_every: int = 5,
+        boss_every: int = S.WaveCfg.BOSS_EVERY,
         max_wave: int = 0,
-        boss_min_wave: int = 7,
+        boss_min_wave: int = S.WaveCfg.BOSS_MIN_WAVE,
     ) -> None:
         self.boss_min_wave: int = boss_min_wave
         self._last_boss_wave: int = 0 
@@ -292,7 +294,7 @@ class Spawner:
         if wave > 8:
             count = int(count * (1.0 + (wave - 8) * 0.04))
         # سقف 19 دشمن (قبلاً بی‌نهایت بود)
-        return max(3, min(count, 19))
+        return max(3, min(count, S.WaveCfg.MAX_ENEMIES_IN_WAVE))
 
     def _spawn_interval_for_wave(self, wave: int) -> float:
         """فاصله بین spawn تدریجاً کوتاه‌تر می‌شود (تا حد مشخص)."""
@@ -308,7 +310,7 @@ class Spawner:
 
         # بعد از هر باس، حداقل ۳ موج فاصله
         if self._last_boss_wave > 0:
-            if wave - self._last_boss_wave < 3:
+            if wave - self._last_boss_wave < S.WaveCfg.BOSS_MIN_GAP:
                 return False
 
         # شانس خیلی کم: ۱۵% پایه، حداکثر ۴۵%
@@ -339,8 +341,8 @@ class Spawner:
           # ---- موج پیشرفته (Advanced) ----
         self.is_advanced_wave = False
         if not self.is_boss_wave:
-            if self.wave == 20:
-                self.is_advanced_wave = True  # معرفی در لول ۲۰
+            if self.wave == S.WaveCfg.ADVANCED_INTRO_WAVE:
+                self.is_advanced_wave = True
             elif self.wave > 20 and self.wave % 4 != 0:
                 # از لول ۲۱ به بعد با شانس ۲۵٪ (به جز موج‌های الیت)
                 if random.random() < 0.25:
@@ -351,7 +353,7 @@ class Spawner:
             not self.is_boss_wave
             and not self.is_advanced_wave
             and self.wave >= 4
-            and self.wave % 4 == 0
+            and self.wave % S.WaveCfg.ELITE_INTERVAL == 0
         )
 
         # ---- تعداد ----
@@ -443,8 +445,11 @@ class Spawner:
 
         # ---- شانس Omega (فقط از موج ۱۰) ----
         omega_chance = 0.0
-        if self.wave >= 10:
-            omega_chance = min(0.35, 0.10 + (self.wave - 10) * 0.04)
+        if self.wave >= S.WaveCfg.BOSS_OMEGA_MIN_WAVE:
+            omega_chance = min(
+                0.35,
+                0.10 + (self.wave - S.WaveCfg.BOSS_OMEGA_MIN_WAVE) * 0.04,
+            )
 
         if random.random() < omega_chance:
             # Omega تنها می‌آید
@@ -463,7 +468,7 @@ class Spawner:
             boss_cls = boss_classes[i]
             try:
                 boss = boss_cls(x, -150, scene=self.scene)
-                boss.set_entry(-150, 0)
+                boss.set_entry(-150, boss.ENTRY_Y)
                 boss.sway_amplitude = sway
                 boss.sway_phase_offset = phase_offset
                 self._spawn_enemy(boss)
