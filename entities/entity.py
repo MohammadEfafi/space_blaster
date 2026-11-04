@@ -99,6 +99,7 @@ class Entity:
         self.age: float = 0.0
         self.flash: float = 0.0     # 0..1 — پس از ضربه به 1 می‌رسد و نرم صفر می‌شود
         self._pending_kill: bool = False
+        self._error_reported: bool = False
 
         # ---- رفرنس‌ها ----
         self.scene: "GameplayScene | None" = scene
@@ -332,12 +333,11 @@ class Entity:
     # ─────────────────────────────────────────────────────────────────────
 
     def _report(self, where: str) -> None:
-        import traceback
-        header = f"\n[ENTITY ERROR] {self.__class__.__name__}.{where}()"
-        print(header)
-        print("-" * len(header))
-        traceback.print_exc()
-        print("-" * len(header))
+        if self._error_reported:
+            return
+        self._error_reported = True
+        from core.log import report_error
+        report_error(f"{self.__class__.__name__}.{where}")
 
     # ─────────────────────────────────────────────────────────────────────
     #  نمایش رشته‌ای (برای دیباگ)
