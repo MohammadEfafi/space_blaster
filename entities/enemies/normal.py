@@ -218,26 +218,5 @@ class NormalEnemy(Enemy):
         pygame.draw.circle(surface, (255, 200, 200), (cx, eye_y), max(1, eye_r // 2))
         pygame.draw.circle(surface, (255, 255, 255), (cx - 1, eye_y - 1), max(1, eye_r // 4))
 
-    def _apply_fade(
-        self,
-        surface: pygame.Surface,
-        cx: int, cy: int, r: int,
-        alpha: int,
-    ) -> None:
-        a = 255 - alpha
-        if a <= 0:
-            return
-        fade = pygame.Surface((r * 4, r * 4), pygame.SRCALPHA)
-        fade.fill((0, 0, 0, int(a * 0.7)))
-        surface.blit(fade, (cx - r * 2, cy - r * 2))
-
-    @staticmethod
-    def _darker(c, amount):
-        return (max(0, c[0] - amount), max(0, c[1] - amount), max(0, c[2] - amount))
-
-    @staticmethod
-    def _lighter(c, amount):
-        return (min(255, c[0] + amount), min(255, c[1] + amount), min(255, c[2] + amount))
-
 
 __all__ = ["NormalEnemy"]

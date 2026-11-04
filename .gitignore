@@ -161,4 +161,4 @@ secrets.json
 *.bak
 *.backup
 *.orig
-*.rej
+*.rejbackup.bundle
