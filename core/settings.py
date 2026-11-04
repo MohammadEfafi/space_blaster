@@ -202,6 +202,15 @@ class WaveCfg:
     WEIGHTS_LATE:   Final[tuple[int, int, int]] = (5, 3, 5)
 
 
+    BOSS_EVERY:           Final[int] = 5    # هر چند موج یک باس
+    BOSS_MIN_WAVE:        Final[int] = 7    # حداقل موج برای اولین باس
+    BOSS_OMEGA_MIN_WAVE:  Final[int] = 10   # حداقل موج برای Omega
+    BOSS_MIN_GAP:         Final[int] = 3    # فاصله‌ی حداقلی بین دو باس
+    BOSS_MAX_COUNT:       Final[int] = 3    # حداکثر باس همزمان
+    MAX_ENEMIES_IN_WAVE:  Final[int] = 19   # سقف دشمن در یک موج
+    ADVANCED_INTRO_WAVE:  Final[int] = 20   # معرفی دشمن‌های پیشرفته
+    ELITE_INTERVAL:       Final[int] = 4    # هر چند موج الیت
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  ⑧  افکت‌های بصری (Effects / FX)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -276,10 +285,10 @@ class Keys:
 # ═══════════════════════════════════════════════════════════════════════════
 
 class Debug:
-    SHOW_FPS:     Final[bool] = True    # نمایش FPS گوشه‌ی صفحه
-    GOD_MODE:     Final[bool] = False   # پلیر نامیرا (برای تست)
-    SHOW_HITBOX:  Final[bool] = False   # نمایش هیت‌باکس‌ها
-    LOG_EVENTS:   Final[bool] = False   # چاپ رویدادها در کنسول
+    SHOW_FPS:     bool = True    
+    GOD_MODE:     bool = False
+    SHOW_HITBOX:  bool = False
+    LOG_EVENTS:   bool = False
 
 
 __all__ = [
