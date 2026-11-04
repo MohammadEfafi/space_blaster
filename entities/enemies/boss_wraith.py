@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import random
 import pygame
+from core import settings as S
 from entities.bullet import Bullet, BulletKind
 from entities.enemies.boss_base import BossBase, draw_poly_alpha, draw_line_alpha
 
@@ -113,7 +114,7 @@ class PlasmaWraith(BossBase):
                 self.scene.spawn_bullet(Bullet(
                     self.x + ux * i * 10, self.y + uy * i * 10,
                     ux * 360, uy * 360,
-                    friendly=False, kind=BulletKind.ENEMY, scene=self.scene,
+                    friendly=False, kind=BulletKind.BOSS, scene=self.scene,
                 ))
             except Exception:
                 pass
@@ -133,7 +134,7 @@ class PlasmaWraith(BossBase):
                 self.scene.spawn_bullet(Bullet(
                     self.x, self.y,
                     math.cos(angle) * 220, math.sin(angle) * 220,
-                    friendly=False, kind=BulletKind.ENEMY, scene=self.scene,
+                    friendly=False, kind=BulletKind.BOSS, scene=self.scene,
                 ))
             except Exception:
                 pass
@@ -146,7 +147,7 @@ class PlasmaWraith(BossBase):
     def _attack_teleport(self):
         if self.scene is None:
             return
-        w = self.scene.screen.get_width()
+        w = S.Window.WIDTH
         self._tp_target_x = random.uniform(w * 0.15, w * 0.85)
         self._tp_state = "warn"
         self._tp_progress = 0.0
@@ -406,10 +407,6 @@ class PlasmaWraith(BossBase):
                     draw_line_alpha(surface, (255, 120, 120, line_alpha),
                                     (prev_x, prev_y), (bx, by), 2)
                     prev_x, prev_y = bx, by
-
-        # ---- ۹. نوار HP ----
-        if self.hp < self.max_hp:
-            self._draw_hp_bar(surface, cx, cy, r)
             
     def get_hitcircles(self):
         """یک hitbox بزرگ‌تر که با بدن شبح هماهنگه."""

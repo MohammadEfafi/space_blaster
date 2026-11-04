@@ -69,7 +69,7 @@ class IronDreadnought(BossBase):
                 self.scene.spawn_bullet(Bullet(
                     self.x, self.y + 30,
                     nx * 260, ny * 260,
-                    friendly=False, kind=BulletKind.ENEMY, scene=self.scene,
+                    friendly=False, kind=BulletKind.BOSS, scene=self.scene,
                 ))
             except Exception:
                 pass
@@ -93,7 +93,7 @@ class IronDreadnought(BossBase):
                     self.scene.spawn_bullet(Bullet(
                         self.x, self.y + 30,
                         math.cos(angle) * 340, math.sin(angle) * 340,
-                        friendly=False, kind=BulletKind.ENEMY, scene=self.scene,
+                        friendly=False, kind=BulletKind.BOSS, scene=self.scene,
                     ))
                 except Exception:
                     pass
@@ -371,10 +371,6 @@ class IronDreadnought(BossBase):
                         pygame.draw.circle(g, (255, 100, 40, aa), (12, 12), rr)
                 surface.blit(g, (vx - 12, vy - 20),
                              special_flags=pygame.BLEND_RGBA_ADD)
-
-        # ---- ۱۱. نوار HP ----
-        if self.hp < self.max_hp:
-            self._draw_hp_bar(surface, cx, cy, r)
             
 
     def get_hitcircles(self):

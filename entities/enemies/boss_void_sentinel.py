@@ -171,7 +171,7 @@ class VoidSentinel(BossBase):
         x2, y2 = self._charge_pos
 
         player = getattr(self.scene, "player", None)
-        if player and player.alive and player.invuln_time <= 0:
+        if player and player.alive and not player.is_invulnerable:
             px, py = player.x, player.y
             line_len = math.hypot(x2 - x1, y2 - y1)
             if line_len > 0.001:
@@ -235,9 +235,6 @@ class VoidSentinel(BossBase):
             self._draw_summon_portals(surface)
         if self._current_attack == "lightning":
             self._draw_charge_effect(surface, cx, cy, r)
-
-        if self.hp < self.max_hp:
-            self._draw_hp_bar(surface, cx, cy, r)
 
         if alpha < 250:
             self._apply_fade(surface, cx, cy, r, alpha)

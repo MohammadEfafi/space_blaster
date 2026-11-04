@@ -26,6 +26,7 @@ from __future__ import annotations
 import math
 import random
 import pygame
+from core import settings as S
 
 from entities.bullet import Bullet, BulletKind
 from entities.enemies.boss_base import BossBase, draw_poly_alpha, draw_line_alpha
@@ -184,7 +185,7 @@ class OmegaCore(BossBase):
                             self.x, self.y,
                             math.cos(angle) * self._spiral_speed,
                             math.sin(angle) * self._spiral_speed,
-                            friendly=False, kind=BulletKind.ENEMY,
+                            friendly=False, kind=BulletKind.BOSS, 
                             scene=self.scene,
                         ))
                     except Exception:
@@ -198,10 +199,8 @@ class OmegaCore(BossBase):
     def _attack_meteor(self) -> None:
         if self.scene is None:
             return
-        try:
-            W = self.scene.screen.get_width()
-        except Exception:
-            W = 1280
+        
+        W = S.Window.WIDTH
 
         for _ in range(10):
             x = random.uniform(60, W - 60)
@@ -210,7 +209,7 @@ class OmegaCore(BossBase):
             try:
                 b = Bullet(
                     x, y, 0, speed,
-                    friendly=False, kind=BulletKind.ENEMY, scene=self.scene,
+                    friendly=False, kind=BulletKind.BOSS, scene=self.scene,
                 )
                 b.radius = 8
                 self.scene.spawn_bullet(b)
@@ -439,10 +438,6 @@ class OmegaCore(BossBase):
                 if a > 0:
                     pygame.draw.circle(surface, (255, 255, 255, a),
                                        (cx, cy), rr, 3)
-
-        # ---- ۱۲. نوار HP ----
-        if self.hp < self.max_hp:
-            self._draw_hp_bar(surface, cx, cy, r)
 
 
 __all__ = ["OmegaCore"]
