@@ -66,15 +66,9 @@ class Vanguard(Player):
     # ─────────────────────────────────────────────────────────────────────
 
     def _get_shot_angles(self) -> list[float]:
-        """
-        دو گلوله‌ی موازی از دو پاد کناری.
-        زاویه‌ها نسبت به محور افقی محاسبه می‌شن ولی ما موقعیت افقی
-        رو جدا مدیریت می‌کنیم (به همین خاطر هم‌زاویه‌ان).
-        """
         if self.powerup_time > 0.0:
-            # شلیک پنج‌گانه (Power-Up)
             return [-108.0, -99.0, -90.0, -81.0, -72.0]
-        return [-90.0, -90.0]  # دو گلوله‌ی موازی
+        return [-90.0] 
 
     def try_shoot(self):
         """
@@ -87,7 +81,7 @@ class Vanguard(Player):
         if self.shoot_cd > 0.0 or not self.alive:
             return []
 
-        self.shoot_cd = self.SHOOT_CD
+        self.shoot_cd = self.current_shoot_cd
         self.muzzle_flash = 1.0
         self.recoil = 0.7
 
