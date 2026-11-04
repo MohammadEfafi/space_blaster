@@ -34,6 +34,9 @@ from entities.enemies.specter import SpecterEnemy
 from entities.enemies.spiral import SpiralEnemy
 from entities.enemies.tank import TankEnemy
 from entities.enemies.titan import TitanEnemy
+from entities.enemies.boss_registry import (
+    BOSS_CLASSES, OMEGA_CLASS, get_random_boss,
+)
 
 __all__ = [
     "Enemy", "EnemyKind",
@@ -41,5 +44,5 @@ __all__ = [
     "SpecterEnemy", "BombardierEnemy",
     "SentinelEnemy", "SerpentEnemy", "TitanEnemy",
     "BossBase", "VoidSentinel", "IronDreadnought", "PlasmaWraith", "OmegaCore",
-    "EnemyFactory",
+    "EnemyFactory", "BOSS_CLASSES", "OMEGA_CLASS", "get_random_boss",
 ]

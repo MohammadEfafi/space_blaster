@@ -155,7 +155,7 @@ class BossBase(Enemy):
             b = Bullet(
                 self.x, self.y,
                 math.cos(angle) * speed, math.sin(angle) * speed,
-                friendly=False, kind=BulletKind.ENEMY, scene=self.scene,
+                friendly=False, kind=BulletKind.BOSS, scene=self.scene,
             )
             try:
                 self.scene.spawn_bullet(b)
@@ -184,7 +184,7 @@ class BossBase(Enemy):
             ny = ux * sa + uy * ca
             b = Bullet(
                 self.x, self.y, nx * speed, ny * speed,
-                friendly=False, kind=BulletKind.ENEMY, scene=self.scene,
+                friendly=False, kind=BulletKind.BOSS, scene=self.scene,
             )
             try:
                 self.scene.spawn_bullet(b)
@@ -249,22 +249,6 @@ class BossBase(Enemy):
         color = (255, 60, 60) if ratio > 0.5 else (255, 150, 40) if ratio > 0.25 else (255, 80, 255)
         pygame.draw.rect(surface, color, (x, y, int(w * ratio), h))
         pygame.draw.rect(surface, (255, 255, 255), (x, y, w, h), 2)
-
-    def _apply_fade(self, surface, cx, cy, r, alpha):
-        a = 255 - alpha
-        if a <= 0:
-            return
-        fade = pygame.Surface((r * 4, r * 4), pygame.SRCALPHA)
-        fade.fill((0, 0, 0, int(a * 0.7)))
-        surface.blit(fade, (cx - r * 2, cy - r * 2))
-
-    @staticmethod
-    def _darker(c, amount):
-        return (max(0, c[0] - amount), max(0, c[1] - amount), max(0, c[2] - amount))
-
-    @staticmethod
-    def _lighter(c, amount):
-        return (min(255, c[0] + amount), min(255, c[1] + amount), min(255, c[2] + amount))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
