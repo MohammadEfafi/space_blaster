@@ -253,13 +253,5 @@ class SpecterEnemy(Enemy):
             ratio = max(0.0, self.hp / self.max_hp)
             pygame.draw.rect(surface, (255, 80, 255), (x, y, int(w * ratio), h))
 
-    @staticmethod
-    def _darker(c, amount):
-        return (max(0, c[0] - amount), max(0, c[1] - amount), max(0, c[2] - amount))
-
-    @staticmethod
-    def _lighter(c, amount):
-        return (min(255, c[0] + amount), min(255, c[1] + amount), min(255, c[2] + amount))
-
 
 __all__ = ["SpecterEnemy"]

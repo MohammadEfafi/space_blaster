@@ -287,13 +287,5 @@ class SerpentEnemy(Enemy):
                          (int(hx + tongue_wave), int(tongue_tip_y - 4)),
                          (int(hx + tongue_wave + 4), int(tongue_tip_y)), 1)
 
-    @staticmethod
-    def _darker(c, amount):
-        return (max(0, c[0] - amount), max(0, c[1] - amount), max(0, c[2] - amount))
-
-    @staticmethod
-    def _lighter(c, amount):
-        return (min(255, c[0] + amount), min(255, c[1] + amount), min(255, c[2] + amount))
-
 
 __all__ = ["SerpentEnemy"]

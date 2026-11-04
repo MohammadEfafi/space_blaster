@@ -254,13 +254,6 @@ class TitanEnemy(Enemy):
             pygame.draw.rect(surface, color, (x, y, int(w * ratio), h))
             pygame.draw.rect(surface, (255, 255, 255), (x, y, w, h), 2)
 
-    @staticmethod
-    def _darker(c, amount):
-        return (max(0, c[0] - amount), max(0, c[1] - amount), max(0, c[2] - amount))
-
-    @staticmethod
-    def _lighter(c, amount):
-        return (min(255, c[0] + amount), min(255, c[1] + amount), min(255, c[2] + amount))
 
 
 __all__ = ["TitanEnemy"]

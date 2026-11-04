@@ -266,4 +266,38 @@ class Enemy(Entity):
         self._entry_done = False
 
 
+    # ─────────────────────────────────────────────────────────────────────
+    #  Helpers مشترک (که قبلاً در ۸ زیرکلاس تکرار شده بودن)
+    # ─────────────────────────────────────────────────────────────────────
+
+    def _apply_fade(
+        self,
+        surface: pygame.Surface,
+        cx: int, cy: int, r: int,
+        alpha: int,
+    ) -> None:
+        """محو کردن بدنه با یک مربع نیمه‌شفاف سیاه (برای انیمیشن ورود)."""
+        a = 255 - alpha
+        if a <= 0:
+            return
+        fade = pygame.Surface((r * 4, r * 4), pygame.SRCALPHA)
+        fade.fill((0, 0, 0, int(a * 0.7)))
+        surface.blit(fade, (cx - r * 2, cy - r * 2))
+
+    @staticmethod
+    def _darker(c: tuple[int, int, int], amount: int) -> tuple[int, int, int]:
+        return (
+            max(0, c[0] - amount),
+            max(0, c[1] - amount),
+            max(0, c[2] - amount),
+        )
+
+    @staticmethod
+    def _lighter(c: tuple[int, int, int], amount: int) -> tuple[int, int, int]:
+        return (
+            min(255, c[0] + amount),
+            min(255, c[1] + amount),
+            min(255, c[2] + amount),
+        )
+
 __all__ = ["Enemy", "EnemyKind"]

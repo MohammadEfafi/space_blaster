@@ -2,35 +2,19 @@
 scenes/leaderboard.py
 =====================
 
-صفحه‌ی جدول امتیازات (Hall of Fame) برای SPACE BLASTER — بازطراحی‌شده.
-
-دیزاین:
-    • سکوی قهرمانی (Podium) برای ۳ رتبه‌ی اول با ارتفاع پله‌ای
-    • مدال طلا/نقره/برنز بالای هر پodium
-    • ردیف‌های شیشه‌ای برای رتبه‌های ۴ تا ۱۰
-    • انیمیشن ورود پله‌ای (staggered) برای هر ردیف
-    • هاله‌ی رنگی پشت هر رتبه بر اساس رتبه
-    • پس‌زمینه‌ی ستاره‌ای + هاله‌ی مرکزی
-    • حالت خالی زیبا
-
-چیدمان:
-    • عنوان بالا
-    • سکو در مرکز-بالا (۳ پodium)
-    • جدول پایین (۴-۱۰)
-    • دکمه‌ی BACK پایین
+صفحه‌ی جدول امتیازات (Hall of Fame) برای SPACE BLASTER.
 """
 
 from __future__ import annotations
 
 import math
 import random
-from typing import Callable, Optional
+from typing import Callable
 
 import pygame
 
 from core import settings as S
 from scenes.base import Scene
-from systems.scores import HighScoreStore
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -44,7 +28,6 @@ TITLE_Y      = int(H * 0.08)
 SUBTITLE_Y   = int(H * 0.155)
 DIVIDER_Y    = int(H * 0.185)
 
-# سکوی قهرمانی
 PODIUM_CY    = int(H * 0.46)
 PODIUM_W     = int(W * 0.18)
 PODIUM_H_1   = int(H * 0.22)
@@ -52,7 +35,6 @@ PODIUM_H_2   = int(H * 0.17)
 PODIUM_H_3   = int(H * 0.14)
 PODIUM_GAP   = 20
 
-# جدول پایین (۴-۱۰)
 TABLE_X      = int(W * 0.18)
 TABLE_TOP    = int(H * 0.72)
 ROW_H        = int(H * 0.055)
@@ -67,9 +49,9 @@ HINT_Y       = H - 12
 # ═══════════════════════════════════════════════════════════════════════════
 
 RANK_COLORS: dict[int, tuple[int, int, int]] = {
-    1: (255, 220, 80),     
-    2: (230, 240, 255),    
-    3: (240, 160, 90),    
+    1: (255, 220, 80),
+    2: (230, 240, 255),
+    3: (240, 160, 90),
 }
 RANK_LABELS: dict[int, str] = {
     1: "GOLD",
@@ -131,7 +113,7 @@ class _BackButton:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  صحنه‌ی Leaderboard
+#  صحنه
 # ═══════════════════════════════════════════════════════════════════════════
 
 class LeaderboardScene(Scene):
@@ -141,24 +123,21 @@ class LeaderboardScene(Scene):
     PODIUM_STAGGER = 0.10
 
     def on_enter(self) -> None:
-        # ---- فونت‌ها ----
         self.font_title   = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.BIG, bold=True)
         self.font_sub     = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.NORMAL, bold=True)
         self.font_rank    = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.HUGE, bold=True)
         self.font_score   = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.LARGE, bold=True)
         self.font_label   = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.SMALL, bold=True)
-        self.font_row     = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.LARGE, bold=True)   
-        self.font_row_sm  = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.NORMAL, bold=True)  
-        self.font_hint    = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.SMALL, bold=True)  
+        self.font_row     = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.LARGE, bold=True)
+        self.font_row_sm  = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.NORMAL, bold=True)
+        self.font_hint    = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.SMALL, bold=True)
         self.font_empty   = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.LARGE, bold=True)
 
-        # ---- داده ----
-        self.store = HighScoreStore()
+        self.store = self.game.scores
         self.top3 = self.store.scores[:3]
         self.rest = self.store.scores[3:10]
         self.total_games = self.store.total_games
 
-        # ---- ستاره‌ها ----
         self.stars = [
             [random.uniform(0, W),
              random.uniform(0, H),
@@ -167,25 +146,18 @@ class LeaderboardScene(Scene):
             for _ in range(150)
         ]
 
-        # ---- زمان ----
         self._t = 0.0
 
-        # ---- دکمه ----
         self.btn_back = _BackButton(
             self._go_back,
             cx=W // 2,
             cy=BTN_Y,
         )
 
-        # ---- Audio ----
         self.audio = getattr(self.game, "audio", None)
 
     def on_exit(self) -> None:
         self.stars.clear()
-
-    # ─────────────────────────────────────────────────────────────────────
-    #  ورودی
-    # ─────────────────────────────────────────────────────────────────────
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
@@ -193,10 +165,6 @@ class LeaderboardScene(Scene):
                 self._go_back()
                 return
         self.btn_back.handle_event(event)
-
-    # ─────────────────────────────────────────────────────────────────────
-    #  به‌روزرسانی
-    # ─────────────────────────────────────────────────────────────────────
 
     def update(self, dt: float) -> None:
         self._t += dt
@@ -209,12 +177,7 @@ class LeaderboardScene(Scene):
         mouse_pos = pygame.mouse.get_pos()
         self.btn_back.update(dt, mouse_pos)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رندر
-    # ─────────────────────────────────────────────────────────────────────
-
     def draw(self, surface: pygame.Surface) -> None:
-        # ---- پس‌زمینه ----
         surface.fill(S.Palette.BG_DEEP)
         for x, y, _, r in self.stars:
             pygame.draw.circle(surface, S.Palette.STAR_FAR,
@@ -231,7 +194,6 @@ class LeaderboardScene(Scene):
 
         self.btn_back.draw(surface, self.font_row_sm)
 
-    # ── هاله‌ی پس‌زمینه ──
     def _draw_background_glow(self, surface: pygame.Surface) -> None:
         cx = W // 2
         cy = int(H * 0.35)
@@ -245,7 +207,6 @@ class LeaderboardScene(Scene):
         surface.blit(halo, (cx - r, cy - r),
                      special_flags=pygame.BLEND_RGBA_ADD)
 
-    # ── عنوان ──
     def _draw_title(self, surface: pygame.Surface) -> None:
         cx = W // 2
         pulse = 1.0 + 0.02 * math.sin(self._t * 2.5)
@@ -265,14 +226,12 @@ class LeaderboardScene(Scene):
 
         surface.blit(img_s, img_s.get_rect(center=(cx, TITLE_Y)))
 
-        # زیرعنوان
         sub = self.font_sub.render(
             f"{self.total_games} MISSIONS  ·  {len(self.store.scores)} RECORDS",
             True, S.Palette.GREY,
         )
         surface.blit(sub, sub.get_rect(center=(cx, SUBTITLE_Y)))
 
-        # خط تزئینی
         line_w = int(W * 0.42)
         for i in range(line_w):
             t = i / line_w
@@ -281,12 +240,7 @@ class LeaderboardScene(Scene):
             pygame.draw.line(surface, (*S.Palette.MENU_TITLE, a),
                              (x, DIVIDER_Y), (x, DIVIDER_Y + 1))
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  سکوی قهرمانی
-    # ─────────────────────────────────────────────────────────────────────
-
     def _draw_podium(self, surface: pygame.Surface) -> None:
-        # ترتیب نمایش روی سکو: #2 (چپ)، #1 (وسط)، #3 (راست)
         order = [1, 0, 2]
         n = min(len(self.top3), 3)
         actual_order = [i for i in order if i < n]
@@ -294,7 +248,6 @@ class LeaderboardScene(Scene):
         cx = W // 2
         base_y = PODIUM_CY + PODIUM_H_1 // 2
 
-        # عرض کل و موقعیت شروع
         total_w = len(actual_order) * PODIUM_W + (len(actual_order) - 1) * PODIUM_GAP
         start_x = cx - total_w // 2
 
@@ -302,10 +255,8 @@ class LeaderboardScene(Scene):
             entry = self.top3[data_idx]
             rank = data_idx + 1
 
-            # موقعیت افقی این پodium
             px = start_x + slot_idx * (PODIUM_W + PODIUM_GAP)
 
-            # ارتفاع بر اساس رتبه
             if rank == 1:
                 ph = PODIUM_H_1
             elif rank == 2:
@@ -313,13 +264,11 @@ class LeaderboardScene(Scene):
             else:
                 ph = PODIUM_H_3
 
-            # انیمیشن ورود — بر اساس رتبه (۱ دیرتر)
             delay = rank * self.PODIUM_STAGGER
             local_t = (self._t - delay) / 0.45
             if local_t <= 0:
                 continue
             e = 1.0 - (1.0 - min(1.0, local_t)) ** 3
-            # ارتفاع از صفر بالا میاد
             display_h = int(ph * e)
             alpha = int(255 * min(1.0, local_t * 1.5))
 
@@ -340,10 +289,8 @@ class LeaderboardScene(Scene):
     ) -> None:
         color = RANK_COLORS[rank]
 
-        # ---- سکوی پله‌ای (با گرادیان) ----
         block_rect = pygame.Rect(x, base_y - h, w, h)
         block = pygame.Surface(block_rect.size, pygame.SRCALPHA)
-        # گرادیان عمودی
         for i in range(h):
             t = i / max(1, h - 1)
             r = int(color[0] * (0.55 + 0.45 * (1 - t)))
@@ -353,13 +300,10 @@ class LeaderboardScene(Scene):
             pygame.draw.line(block, (r, g, b, a), (0, i), (w, i))
         surface.blit(block, block_rect.topleft)
 
-        # ---- حاشیه ----
         border_col = (*color, alpha)
         pygame.draw.rect(surface, border_col, block_rect, 2)
 
-        # ---- رتبه (شماره بزرگ) روی سکو ----
         rank_img = self.font_rank.render(str(rank), True, color)
-        # اگه ارتفاع کافی نیست، کوچیکش کن
         max_text_h = int(h * 0.55)
         if rank_img.get_height() > max_text_h:
             scale = max_text_h / rank_img.get_height()
@@ -371,7 +315,6 @@ class LeaderboardScene(Scene):
         rank_rect = rank_img.get_rect(center=(x + w // 2, base_y - h // 2 + 8))
         surface.blit(rank_img, rank_rect)
 
-        # ---- برچسب رتبه (GOLD/SILVER/BRONZE) ----
         if h > 60:
             label_img = self.font_label.render(RANK_LABELS[rank], True, color)
             label_img.set_alpha(int(alpha * 0.8))
@@ -380,11 +323,9 @@ class LeaderboardScene(Scene):
             )
             surface.blit(label_img, label_rect)
 
-        # ---- اگه انیمیشن کامل شده، امتیاز رو نشون بده ----
         if entry_e > 0.7:
             info_alpha = int(255 * (entry_e - 0.7) / 0.3)
 
-            # امتیاز
             score_img = self.font_score.render(f"{entry.score:,}", True, color)
             score_img.set_alpha(info_alpha)
             score_rect = score_img.get_rect(
@@ -392,7 +333,6 @@ class LeaderboardScene(Scene):
             )
             surface.blit(score_img, score_rect)
 
-            # موج
             wave_img = self.font_row_sm.render(
                 f"WAVE {entry.wave}", True, (200, 215, 240),
             )
@@ -402,7 +342,6 @@ class LeaderboardScene(Scene):
             )
             surface.blit(wave_img, wave_rect)
 
-            # سفینه
             ship_img = self.font_row_sm.render(
                 entry.ship.upper(), True, (200, 215, 240),
             )
@@ -412,16 +351,12 @@ class LeaderboardScene(Scene):
             )
             surface.blit(ship_img, ship_rect)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  جدول ۴ تا ۱۰
-    # ─────────────────────────────────────────────────────────────────────
-
     def _draw_table(self, surface: pygame.Surface) -> None:
         x = TABLE_X
         y_start = TABLE_TOP
 
         for i, entry in enumerate(self.rest):
-            rank = i + 4   # از ۴ شروع می‌شه
+            rank = i + 4
             delay = 0.4 + i * self.ROW_STAGGER
             local_t = (self._t - delay) / self.ROW_FADE_TIME
             if local_t <= 0:
@@ -434,7 +369,6 @@ class LeaderboardScene(Scene):
             y = y_start + i * ROW_H
             self._draw_table_row(surface, x, y, rank, entry, alpha, slide_x)
 
-        # خط پایین جدول
         bottom_y = y_start + len(self.rest) * ROW_H + 6
         pygame.draw.line(surface, (60, 80, 120),
                          (x - 10, bottom_y), (x + TABLE_W + 10, bottom_y), 1)
@@ -448,7 +382,6 @@ class LeaderboardScene(Scene):
         alpha: int,
         slide_x: int,
     ) -> None:
-        # ---- پس‌زمینه‌ی ردیف شیشه‌ای ----
         row_rect = pygame.Rect(x - 10, y - 2, TABLE_W + 20, ROW_H - 2)
         bg = pygame.Surface(row_rect.size, pygame.SRCALPHA)
         pygame.draw.rect(
@@ -457,57 +390,45 @@ class LeaderboardScene(Scene):
         )
         surface.blit(bg, row_rect.topleft)
 
-        # ---- حاشیه‌ی ظریف ----
         pygame.draw.rect(
             surface, (70, 90, 130, alpha // 2),
             row_rect, 1, border_radius=6,
         )
 
-        # مرکز عمودی ردیف
         cy = y + (ROW_H - 2) // 2
 
-        # ---- رتبه ----
         rank_img = self.font_row.render(f"#{rank}", True, (200, 220, 255))
         rank_img.set_alpha(alpha)
         surface.blit(rank_img, rank_img.get_rect(midleft=(x + slide_x, cy)))
 
-        # ---- امتیاز ----
         score_img = self.font_row.render(
             f"{entry.score:,}", True, S.Palette.WHITE,
         )
         score_img.set_alpha(alpha)
         surface.blit(score_img, score_img.get_rect(midleft=(x + 110 + slide_x, cy)))
 
-        # ---- موج ----
         wave_img = self.font_row_sm.render(
             f"WAVE {entry.wave}", True, S.Palette.CYAN,
         )
         wave_img.set_alpha(alpha)
         surface.blit(wave_img, wave_img.get_rect(midleft=(x + 300 + slide_x, cy)))
 
-        # ---- سفینه ----
         ship_img = self.font_row_sm.render(
             entry.ship.upper(), True, (200, 215, 240),
         )
         ship_img.set_alpha(alpha)
         surface.blit(ship_img, ship_img.get_rect(midleft=(x + 420 + slide_x, cy)))
 
-        # ---- تاریخ ----
         date_img = self.font_row_sm.render(
             entry.date_short(), True, (170, 190, 220),
         )
         date_img.set_alpha(alpha)
         surface.blit(date_img, date_img.get_rect(midleft=(x + 590 + slide_x, cy)))
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  حالت خالی
-    # ─────────────────────────────────────────────────────────────────────
-
     def _draw_empty(self, surface: pygame.Surface) -> None:
         cx = W // 2
         cy = H // 2 - 20
 
-        # آیکون بزرگ
         icon_r = 60
         pulse = 0.9 + 0.1 * math.sin(self._t * 2.0)
         for rr in range(int(icon_r * 1.6), 0, -6):
@@ -517,7 +438,6 @@ class LeaderboardScene(Scene):
             pygame.draw.circle(surface, (*S.Palette.HUD_ACCENT, a),
                                (cx, cy - 40), int(rr))
 
-        # متن
         empty_img = self.font_empty.render("NO MISSIONS YET", True, S.Palette.GREY)
         surface.blit(empty_img, empty_img.get_rect(center=(cx, cy + 60)))
 
@@ -526,10 +446,6 @@ class LeaderboardScene(Scene):
             True, (120, 140, 170),
         )
         surface.blit(sub, sub.get_rect(center=(cx, cy + 110)))
-
-    # ─────────────────────────────────────────────────────────────────────
-    #  اکشن‌ها
-    # ─────────────────────────────────────────────────────────────────────
 
     def _go_back(self) -> None:
         if self.audio is not None:

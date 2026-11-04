@@ -203,23 +203,6 @@ class SpiralEnemy(Enemy):
                 (cx - w, y), (cx + w, y), 1,
             )
 
-    def _apply_fade(
-        self, surface: pygame.Surface, cx: int, cy: int, r: int, alpha: int,
-    ) -> None:
-        a = 255 - alpha
-        if a <= 0:
-            return
-        fade = pygame.Surface((r * 4, r * 4), pygame.SRCALPHA)
-        fade.fill((0, 0, 0, int(a * 0.7)))
-        surface.blit(fade, (cx - r * 2, cy - r * 2))
-
-    @staticmethod
-    def _darker(c, amount):
-        return (max(0, c[0] - amount), max(0, c[1] - amount), max(0, c[2] - amount))
-
-    @staticmethod
-    def _lighter(c, amount):
-        return (min(255, c[0] + amount), min(255, c[1] + amount), min(255, c[2] + amount))
 
 
 __all__ = ["SpiralEnemy"]
