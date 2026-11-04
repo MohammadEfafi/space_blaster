@@ -190,9 +190,9 @@ class SceneManager:
             self._do_pop()
 
         elif kind == _Op.REPLACE:
-            self._do_pop()          # حذف صحنه‌ی رویی
-            self._do_push(op.name)  # قرار دادن صحنه‌ی جدید
-
+            self._do_pop_silent()   # ← بدون resume
+            self._do_push(op.name)
+            
         elif kind == _Op.CLEAR:
             self._do_clear_stack()
 
@@ -209,6 +209,13 @@ class SceneManager:
         _, scene = self._stack.pop()
         scene._exit()
         self._do_resume_current()
+        
+    def _do_pop_silent(self) -> None:
+        """حذف صحنه‌ی رویی بدون resume کردن صحنه‌ی زیرین."""
+        if not self._stack:
+            return
+        _, scene = self._stack.pop()
+        scene._exit()
 
     def _do_pause_current(self) -> None:
         if self._stack:
@@ -267,11 +274,8 @@ class SceneManager:
     # ─────────────────────────────────────────────────────────────────────
 
     def _report(self, where: str) -> None:
-        header = f"\n[SCENE MANAGER ERROR] {where}"
-        print(header)
-        print("-" * len(header))
-        traceback.print_exc()
-        print("-" * len(header))
+        from core.log import report_error
+        report_error(f"SceneManager.{where}")
 
 
 __all__ = ["SceneManager"]
