@@ -1,13 +1,15 @@
 
 <div align="center">
 
+[![English](https://img.shields.io/badge/🇬🇧_English-0052CC?style=for-the-badge)](README.md)
+[![فارسی](https://img.shields.io/badge/🇮🇷_فارسی-239120?style=for-the-badge)](README.fa.md)
+
 # SPACE BLASTER
 
 **یک بازی تیراندازی فضایی (Space Shooter) سریع، هیجان‌انگیز و با دید از بالا که از صفر با پایتون و پایگیم ساخته شده است.**
 
 *بدون هیچ فایل تصویری یا صوتی خارجی. همه چیز به صورت پروسیجرال (تولید در لحظه با کد) ساخته شده است.*
 
-[English](README.md) | **فارسی**
 
 [![CI](https://github.com/MohammadEfafi/space_blaster/actions/workflows/ci.yml/badge.svg)](https://github.com/MohammadEfafi/space_blaster/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)

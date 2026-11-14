@@ -1,6 +1,9 @@
 
 <div align="center">
 
+[![English](https://img.shields.io/badge/🇬🇧_English-0052CC?style=for-the-badge)](README.md)
+[![فارسی](https://img.shields.io/badge/🇮🇷_فارسی-239120?style=for-the-badge)](README.fa.md)
+
 # SPACE BLASTER
 
 **A fast-paced, action-packed top-down space shooter built from scratch with Python and Pygame.**
