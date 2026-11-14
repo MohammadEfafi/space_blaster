@@ -31,13 +31,22 @@ import pygame
 #  کپی شود، همه چیز خودکار درست می‌ماند.
 # ═══════════════════════════════════════════════════════════════════════════
 
-ROOT_DIR:  Final[Path] = Path(__file__).resolve().parent.parent
-DATA_DIR:  Final[Path] = ROOT_DIR / "data"
+import sys
+
+if getattr(sys, "frozen", False):
+    RESOURCE_ROOT = Path(sys._MEIPASS)
+    SAVE_ROOT     = Path(sys.executable).parent
+else:
+    RESOURCE_ROOT = Path(__file__).resolve().parent.parent
+    SAVE_ROOT     = RESOURCE_ROOT
+
+ROOT_DIR:  Final[Path] = RESOURCE_ROOT
+DATA_DIR:  Final[Path] = RESOURCE_ROOT / "data"
 IMG_DIR:   Final[Path] = DATA_DIR / "images"
 SOUND_DIR: Final[Path] = DATA_DIR / "sounds"
 FONT_DIR:  Final[Path] = DATA_DIR / "fonts"
 LEVEL_DIR: Final[Path] = DATA_DIR / "levels"
-SAVE_DIR:  Final[Path] = ROOT_DIR / "saves"
+SAVE_DIR:  Final[Path] = SAVE_ROOT / "saves"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
