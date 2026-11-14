@@ -46,11 +46,11 @@ SAVE_DIR:  Final[Path] = ROOT_DIR / "saves"
 
 class Window:
     TITLE:     Final[str]  = "SPACE BLASTER"
-    WIDTH:     Final[int]  = 1920   
-    HEIGHT:    Final[int]  = 1080   
+    WIDTH:     int = 1920
+    HEIGHT:    int = 1080
     FPS:       Final[int]  = 60
     VSYNC:     Final[int]  = 1
-    RESIZABLE: Final[bool] = True    
+    RESIZABLE: Final[bool] = True
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  ③  پالت رنگ (Palette)

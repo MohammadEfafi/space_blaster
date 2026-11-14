@@ -238,11 +238,6 @@ class AudioSystem:
         return None
 
     def _load(self, name: str) -> Optional[pygame.mixer.Sound]:
-        """
-        صدای داده‌شده را (با کش) لود می‌کند.
-        اگر لود نشود، None کش می‌شود تا دوباره تلاش نشود.
-        """
-        # قبلاً تلاش شده؟
         if name in self._cache:
             return self._cache[name]
 
@@ -252,8 +247,14 @@ class AudioSystem:
 
         path = self._resolve_path(name)
         if path is None:
-            self._cache[name] = None
-            return None
+            # No file on disk — try procedural synthesis
+            try:
+                from systems.sound_synth import synthesize
+                sound = synthesize(name)
+            except Exception:
+                sound = None
+            self._cache[name] = sound
+            return sound
 
         try:
             sound = pygame.mixer.Sound(str(path))

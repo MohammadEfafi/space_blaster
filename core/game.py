@@ -24,6 +24,27 @@ class Game:
         pygame.init()
         pygame.display.set_caption(S.Window.TITLE)
 
+        # ─── Fit window to desktop ───
+        info = pygame.display.Info()
+        desktop_w, desktop_h = info.current_w, info.current_h
+
+        base_w = S.Window.WIDTH
+        base_h = S.Window.HEIGHT
+        scale = min(
+            (desktop_w * 0.90) / base_w,
+            (desktop_h * 0.90) / base_h,
+            1.0,
+        )
+        if scale < 1.0:
+            S.Window.WIDTH = int(base_w * scale)
+            S.Window.HEIGHT = int(S.Window.WIDTH * 9 / 16)
+            print(
+                f"[Game] Desktop {desktop_w}x{desktop_h} too small — "
+                f"using {S.Window.WIDTH}x{S.Window.HEIGHT}"
+            )
+        else:
+            print(f"[Game] Window: {S.Window.WIDTH}x{S.Window.HEIGHT}")
+
         flags = pygame.SCALED
         if S.Window.RESIZABLE:
             flags |= pygame.RESIZABLE
