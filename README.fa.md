@@ -1,8 +1,8 @@
 
 <div align="center">
 
-[![English](https://img.shields.io/badge/🇬🇧_English-0052CC?style=for-the-badge)](README.md)
-[![فارسی](https://img.shields.io/badge/🇮🇷_فارسی-239120?style=for-the-badge)](README.fa.md)
+🌐 **زبان / Language:**
+[🇬🇧 English — اینجا کلیک کنید](README.md) &nbsp;·&nbsp; **[🇮🇷 فارسی (شما اینجا هستید)]**
 
 # SPACE BLASTER
 
