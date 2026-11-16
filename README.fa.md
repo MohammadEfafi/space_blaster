@@ -16,9 +16,26 @@
 [![Pygame](https://img.shields.io/badge/Pygame-CE-green.svg?style=flat&logo=pygame&logoColor=white)](https://pyga.me/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+<div align="center" dir="rtl">
+
+###  آماده‌ی بازی هستید؟
+**بدون نیاز به نصب، پایتون یا تنظیمات. فقط دانلود کنید و دوبار کلیک!**
+
+<br>
+
 <a href="https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">
-  <img src="https://img.shields.io/badge/⬇️_دانلود_برای_ویندوز_-_۱۵_مگابایت-0052CC?style=for-the-badge&logo=windows" alt="Download for Windows">
+  <img src="https://img.shields.io/badge/_برای_دانلود_اینجا_کلیک_کنید-۱۵_مگابایت-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="دانلود برای ویندوز" height="55">
 </a>
+
+<br>
+
+*برای ویندوز ۱۰ و ۱۱ • ۱۵ مگابایت • کاملاً رایگان*
+
+<br>
+
+[ گزارش باگ](https://github.com/MohammadEfafi/space_blaster/issues) · [ درخواست ویژگی](https://github.com/MohammadEfafi/space_blaster/issues)
+
+</div>
 
 <br><br>
 

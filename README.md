@@ -15,13 +15,26 @@
 [![Pygame](https://img.shields.io/badge/Pygame-CE-green.svg?style=flat&logo=pygame&logoColor=white)](https://pyga.me/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+<div align="center">
+
+###  Ready to Play?
+**No installation, no Python, no setup. Just download and double-click!**
+
+<br>
+
 <a href="https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">
-  <img src="https://img.shields.io/badge/⬇️_Download_for_Windows_-_15MB-0052CC?style=for-the-badge&logo=windows" alt="Download for Windows">
+  <img src="https://img.shields.io/badge/_CLICK_HERE_TO_DOWNLOAD-15_MB-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="55">
 </a>
 
-<br><br>
+<br>
 
-[Report Bug](https://github.com/MohammadEfafi/space_blaster/issues) · [Request Feature](https://github.com/MohammadEfafi/space_blaster/issues)
+*For Windows 10/11 • 15 MB • 100% Free*
+
+<br>
+
+[ Report Bug](https://github.com/MohammadEfafi/space_blaster/issues) · [ Request Feature](https://github.com/MohammadEfafi/space_blaster/issues)
+
+</div>
 
 </div>
 
