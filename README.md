@@ -1,4 +1,3 @@
-
 <div align="center">
 
 🌐 **Language / زبان:**
@@ -15,16 +14,20 @@
 [![Pygame](https://img.shields.io/badge/Pygame-CE-green.svg?style=flat&logo=pygame&logoColor=white)](https://pyga.me/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<div align="center">
+<br>
 
-###  Ready to Play?
+### Ready to Play?
 **No installation, no Python, no setup. Just download and double-click!**
 
 <br>
 
 <a href="https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">
-  <img src="https://img.shields.io/badge/_CLICK_HERE_TO_DOWNLOAD-15_MB-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="55">
+  <img src="https://img.shields.io/badge/CLICK_HERE_TO_DOWNLOAD-15_MB-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="55">
 </a>
+
+<br><br>
+
+**Click the green button above to download**
 
 <br>
 
@@ -32,9 +35,17 @@
 
 <br>
 
-[ Report Bug](https://github.com/MohammadEfafi/space_blaster/issues) · [ Request Feature](https://github.com/MohammadEfafi/space_blaster/issues)
+<sub>
+If the main link doesn't work (network/region issues), use these mirrors:
+<br>
+<a href="https://gh-proxy.com/https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">Mirror 1 (gh-proxy)</a>
+&nbsp;·&nbsp;
+<a href="https://xget.xi-xu.me/gh/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">Mirror 2 (xget)</a>
+</sub>
 
-</div>
+<br>
+
+[Report Bug](https://github.com/MohammadEfafi/space_blaster/issues) · [Request Feature](https://github.com/MohammadEfafi/space_blaster/issues)
 
 </div>
 

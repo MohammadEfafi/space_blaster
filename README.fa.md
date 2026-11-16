@@ -1,5 +1,4 @@
-
-<div align="center">
+<div align="center" dir="rtl">
 
 🌐 **زبان / Language:**
 [🇬🇧 English — اینجا کلیک کنید](README.md) &nbsp;·&nbsp; **[🇮🇷 فارسی (شما اینجا هستید)]**
@@ -10,26 +9,25 @@
 
 *بدون هیچ فایل تصویری یا صوتی خارجی. همه چیز به صورت پروسیجرال (تولید در لحظه با کد) ساخته شده است.*
 
-
 [![CI](https://github.com/MohammadEfafi/space_blaster/actions/workflows/ci.yml/badge.svg)](https://github.com/MohammadEfafi/space_blaster/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![Pygame](https://img.shields.io/badge/Pygame-CE-green.svg?style=flat&logo=pygame&logoColor=white)](https://pyga.me/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<div align="center" dir="rtl">
+<br>
 
-###  آماده‌ی بازی هستید؟
+### آماده‌ی بازی هستید؟
 **بدون نیاز به نصب، پایتون یا تنظیمات. فقط دانلود کنید و دوبار کلیک!**
 
 <br>
 
 <a href="https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">
-  <img src="https://img.shields.io/badge/_DOWNLOAD_FOR_WINDOWS-15_MB-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="50">
+  <img src="https://img.shields.io/badge/DOWNLOAD_FOR_WINDOWS-15_MB-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="55">
 </a>
 
 <br><br>
 
-** برای دانلود روی دکمه‌ی سبز بالا کلیک کنید **
+**برای دانلود روی دکمه‌ی سبز بالا کلیک کنید**
 
 <br>
 
@@ -37,7 +35,17 @@
 
 <br>
 
-[ گزارش باگ](https://github.com/MohammadEfafi/space_blaster/issues) · [ درخواست ویژگی](https://github.com/MohammadEfafi/space_blaster/issues)
+<sub>
+اگر لینک اصلی کار نکرد (مشکل شبکه یا تحریم)، از لینک‌های جایگزین زیر استفاده کنید:
+<br>
+<a href="https://gh-proxy.com/https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">لینک جایگزین ۱ (gh-proxy)</a>
+&nbsp;·&nbsp;
+<a href="https://xget.xi-xu.me/gh/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">لینک جایگزین ۲ (xget)</a>
+</sub>
+
+<br>
+
+[گزارش باگ](https://github.com/MohammadEfafi/space_blaster/issues) · [درخواست ویژگی](https://github.com/MohammadEfafi/space_blaster/issues)
 
 </div>
 
