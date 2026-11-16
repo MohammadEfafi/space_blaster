@@ -24,8 +24,12 @@
 <br>
 
 <a href="https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">
-  <img src="https://img.shields.io/badge/_برای_دانلود_اینجا_کلیک_کنید-۱۵_مگابایت-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="دانلود برای ویندوز" height="55">
+  <img src="https://img.shields.io/badge/_DOWNLOAD_FOR_WINDOWS-15_MB-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="50">
 </a>
+
+<br><br>
+
+** برای دانلود روی دکمه‌ی سبز بالا کلیک کنید **
 
 <br>
 
@@ -34,12 +38,6 @@
 <br>
 
 [ گزارش باگ](https://github.com/MohammadEfafi/space_blaster/issues) · [ درخواست ویژگی](https://github.com/MohammadEfafi/space_blaster/issues)
-
-</div>
-
-<br><br>
-
-[گزارش باگ](https://github.com/MohammadEfafi/space_blaster/issues) · [درخواست ویژگی](https://github.com/MohammadEfafi/space_blaster/issues)
 
 </div>
 
