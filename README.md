@@ -15,7 +15,13 @@
 [![Pygame](https://img.shields.io/badge/Pygame-CE-green.svg?style=flat&logo=pygame&logoColor=white)](https://pyga.me/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[Download Latest Release](https://github.com/MohammadEfafi/space_blaster/releases/latest) · [Report Bug](https://github.com/MohammadEfafi/space_blaster/issues) · [Request Feature](https://github.com/MohammadEfafi/space_blaster/issues)
+<a href="https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">
+  <img src="https://img.shields.io/badge/⬇️_Download_for_Windows_-_15MB-0052CC?style=for-the-badge&logo=windows" alt="Download for Windows">
+</a>
+
+<br><br>
+
+[Report Bug](https://github.com/MohammadEfafi/space_blaster/issues) · [Request Feature](https://github.com/MohammadEfafi/space_blaster/issues)
 
 </div>
 
