@@ -17,31 +17,40 @@
 <br>
 
 ### آماده‌ی بازی هستید؟
-**بدون نیاز به نصب، پایتون یا تنظیمات. فقط دانلود کنید و دوبار کلیک!**
+**بدون نیاز به نصب پایتون یا تنظیمات. فقط دانلود کنید و دوبار کلیک!**
 
 <br>
 
-<a href="https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">
-  <img src="https://img.shields.io/badge/DOWNLOAD_FOR_WINDOWS-15_MB-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="55">
+<a href="https://mohammad-efafi.itch.io/space-blaster">
+  <img src="https://img.shields.io/badge/PLAY_ON_ITCH.IO-15_MB-00C853?style=for-the-badge&logo=itch.io&logoColor=white" alt="Play on itch.io" height="55">
 </a>
 
 <br><br>
 
-**برای دانلود روی دکمه‌ی سبز بالا کلیک کنید**
-
-<br>
-
 *برای ویندوز ۱۰ و ۱۱ • ۱۵ مگابایت • کاملاً رایگان*
 
-<br>
+<br><br>
 
-<sub>
-اگر لینک اصلی کار نکرد (مشکل شبکه یا تحریم)، از لینک‌های جایگزین زیر استفاده کنید:
+**نکته‌ی مهم برای کاربران ایرانی:**
+
+این پروژه یک بازی **اپن‌سورس** است و کد کامل آن در همین مخزن گیت‌هاب قابل مشاهده است. هیچ کد مخرب یا فایلی در آن وجود ندارد.
+
+**راه‌های دانلود بدون هیچ هشداری:**
+
+**۱. با VPN (ساده‌ترین راه):** VPN را روشن کنید، روی دکمه‌ی سبز بالا (itch.io) کلیک کنید و نسخه‌ی اصلی را دانلود کنید. این روش توصیه می‌شود.
+
+**۲. از GitHub با آینه:** اگر itch.io فیلتر بود، از لینک‌های زیر استفاده کنید:
 <br>
 <a href="https://gh-proxy.com/https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">لینک جایگزین ۱ (gh-proxy)</a>
 &nbsp;·&nbsp;
 <a href="https://xget.xi-xu.me/gh/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">لینک جایگزین ۲ (xget)</a>
-</sub>
+
+**۳. اگر ویندوز هشدار داد (SmartScreen):**
+اگر هنگام اجرا پیام "Windows protected your PC" دیدید، روی فایل راست‌کلیک کنید، **Properties** را بزنید، در تب General تیک **Unblock** را بزنید و OK کنید. حالا فایل بدون هیچ هشداری اجرا می‌شود.
+
+<br>
+
+برای مشاهده‌ی کد کامل: [GitHub Repository](https://github.com/MohammadEfafi/space_blaster)
 
 <br>
 

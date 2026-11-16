@@ -17,17 +17,19 @@ from core import settings as S
 from scenes.base import Scene
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  چیدمان — نسبت به W و H
-# ═══════════════════════════════════════════════════════════════════════════
-
+# ابعاد صفحه و موقعیت اجزای رابط کاربری بر اساس اندازه پنجره محاسبه می‌شوند.
+# Screen dimensions and UI element positions are calculated relative to the window size.
 W = S.Window.WIDTH
 H = S.Window.HEIGHT
 
+# مختصات عمودی عنوان، زیرعنوان و خط جداکننده برای حفظ چیدمان متناسب با صفحه.
+# Vertical coordinates for the title, subtitle, and divider maintain a proportional layout.
 TITLE_Y      = int(H * 0.08)
 SUBTITLE_Y   = int(H * 0.155)
 DIVIDER_Y    = int(H * 0.185)
 
+# ابعاد و موقعیت سکوهای سه رتبه برتر.
+# Dimensions and positioning of the podiums for the top three ranks.
 PODIUM_CY    = int(H * 0.46)
 PODIUM_W     = int(W * 0.18)
 PODIUM_H_1   = int(H * 0.22)
@@ -35,19 +37,21 @@ PODIUM_H_2   = int(H * 0.17)
 PODIUM_H_3   = int(H * 0.14)
 PODIUM_GAP   = 20
 
+# محدوده جدول رتبه‌های بعدی و ارتفاع هر ردیف.
+# Layout boundaries and row height for the remaining leaderboard entries.
 TABLE_X      = int(W * 0.18)
 TABLE_TOP    = int(H * 0.72)
 ROW_H        = int(H * 0.055)
 TABLE_W      = int(W * 0.64)
 
+# موقعیت دکمه بازگشت و راهنمای پایین صفحه.
+# Positions of the back button and the bottom-screen hint.
 BTN_Y        = int(H * 0.94)
 HINT_Y       = H - 12
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  رنگ رتبه‌ها
-# ═══════════════════════════════════════════════════════════════════════════
-
+# رنگ و عنوان اختصاصی هر یک از سه رتبه نخست.
+# Dedicated colors and labels for each of the top three ranks.
 RANK_COLORS: dict[int, tuple[int, int, int]] = {
     1: (255, 220, 80),
     2: (230, 240, 255),
@@ -61,10 +65,6 @@ RANK_LABELS: dict[int, str] = {
 DEFAULT_COLOR = (140, 165, 200)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  دکمه‌ی بازگشت
-# ═══════════════════════════════════════════════════════════════════════════
-
 class _BackButton:
     def __init__(self, on_click: Callable[[], None], cx: int, cy: int) -> None:
         self.on_click = on_click
@@ -77,6 +77,9 @@ class _BackButton:
     def update(self, dt: float, mouse_pos: tuple[int, int]) -> None:
         self._t += dt
         self.hovered = self.rect.collidepoint(mouse_pos)
+
+        # مقدار انیمیشن به‌صورت تدریجی به وضعیت هاور نزدیک می‌شود تا تغییر ناگهانی نباشد.
+        # The animation value gradually approaches the hover state to avoid abrupt transitions.
         target = 1.0 if self.hovered else 0.0
         self._hover += (target - self._hover) * min(1.0, dt * 12.0)
 
@@ -88,6 +91,8 @@ class _BackButton:
         return False
 
     def draw(self, surface: pygame.Surface, font: pygame.font.Font) -> None:
+        # با افزایش هاور، محدوده دکمه کمی بزرگ‌تر می‌شود.
+        # The button's bounds expand slightly as the hover intensity increases.
         pad = int(6 * self._hover)
         rect = self.rect.inflate(pad * 2, pad)
         accent = (120, 200, 255)
@@ -98,6 +103,8 @@ class _BackButton:
         surface.blit(bg, rect.topleft)
         pygame.draw.rect(surface, accent, rect, 2, border_radius=8)
 
+        # لایه درخشش فقط هنگام نزدیک شدن نشانگر به دکمه نمایش داده می‌شود.
+        # The glow layer appears only when the pointer is hovering over the button.
         if self._hover > 0.05:
             glow = pygame.Surface(rect.size, pygame.SRCALPHA)
             pygame.draw.rect(glow, (*accent, int(80 * self._hover)),
@@ -112,17 +119,17 @@ class _BackButton:
         surface.blit(img, tr)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  صحنه
-# ═══════════════════════════════════════════════════════════════════════════
-
 class LeaderboardScene(Scene):
 
+    # زمان‌بندی ورود تدریجی ردیف‌ها و سکوهای رتبه‌بندی.
+    # Timing values for the staggered entrance of leaderboard rows and podiums.
     ROW_STAGGER    = 0.06
     ROW_FADE_TIME  = 0.32
     PODIUM_STAGGER = 0.10
 
     def on_enter(self) -> None:
+        # فونت‌های موردنیاز بخش‌های مختلف جدول امتیازات.
+        # Fonts used by the different sections of the leaderboard.
         self.font_title   = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.BIG, bold=True)
         self.font_sub     = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.NORMAL, bold=True)
         self.font_rank    = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.HUGE, bold=True)
@@ -133,11 +140,15 @@ class LeaderboardScene(Scene):
         self.font_hint    = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.SMALL, bold=True)
         self.font_empty   = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.LARGE, bold=True)
 
+        # داده‌های جدول از مخزن امتیازات دریافت و به دو گروه تقسیم می‌شوند.
+        # Leaderboard data is retrieved from the score store and divided into two groups.
         self.store = self.game.scores
         self.top3 = self.store.scores[:3]
         self.rest = self.store.scores[3:10]
         self.total_games = self.store.total_games
 
+        # ستاره‌ها با موقعیت، سرعت و اندازه تصادفی برای پس‌زمینه متحرک ساخته می‌شوند.
+        # Stars are initialized with random positions, speeds, and sizes for the animated background.
         self.stars = [
             [random.uniform(0, W),
              random.uniform(0, H),
@@ -157,6 +168,8 @@ class LeaderboardScene(Scene):
         self.audio = getattr(self.game, "audio", None)
 
     def on_exit(self) -> None:
+        # آزادسازی فهرست ستاره‌ها هنگام خروج از صحنه.
+        # Clear the star list when leaving the scene.
         self.stars.clear()
 
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -168,8 +181,14 @@ class LeaderboardScene(Scene):
 
     def update(self, dt: float) -> None:
         self._t += dt
+
+        # حرکت عمودی ستاره‌ها با سرعت مستقل و متناسب با زمان فریم.
+        # Stars move vertically at individual speeds scaled by the frame delta time.
         for st in self.stars:
             st[1] += st[2] * dt
+
+            # ستاره‌های خارج‌شده از پایین صفحه از بالا و در موقعیتی افقی جدید ظاهر می‌شوند.
+            # Stars leaving the bottom of the screen reappear at the top with a new horizontal position.
             if st[1] > H + 4:
                 st[1] = -4
                 st[0] = random.uniform(0, W)
@@ -179,12 +198,17 @@ class LeaderboardScene(Scene):
 
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill(S.Palette.BG_DEEP)
+
+        # رسم پس‌زمینه ستاره‌ای پیش از سایر اجزای رابط کاربری.
+        # Draw the starfield background before rendering the other UI elements.
         for x, y, _, r in self.stars:
             pygame.draw.circle(surface, S.Palette.STAR_FAR,
                                (int(x), int(y)), max(1, int(r)))
 
         self._draw_title(surface)
 
+        # در نبود رکورد، پیام خالی نمایش داده می‌شود؛ در غیر این صورت رتبه‌بندی رسم می‌شود.
+        # An empty-state message is shown when no records exist; otherwise, the leaderboard is rendered.
         if self.store.is_empty:
             self._draw_empty(surface)
         else:
@@ -199,6 +223,9 @@ class LeaderboardScene(Scene):
         cy = int(H * 0.35)
         r = 320
         halo = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+
+        # حلقه‌های هم‌مرکز با آلفای متغیر، هاله‌ای نرم در مرکز پس‌زمینه ایجاد می‌کنند.
+        # Concentric circles with varying alpha values create a soft central background glow.
         for rr in range(r, 0, -10):
             a = int(5 * (1 - rr / r) ** 1.4)
             if a <= 0:
@@ -209,6 +236,9 @@ class LeaderboardScene(Scene):
 
     def _draw_title(self, surface: pygame.Surface) -> None:
         cx = W // 2
+
+        # تغییر سینوسی مقیاس عنوان، جلوه‌ای از تپش آرام ایجاد می‌کند.
+        # A sinusoidal scale variation gives the title a subtle pulsing effect.
         pulse = 1.0 + 0.02 * math.sin(self._t * 2.5)
 
         img = self.font_title.render("HALL OF FAME", True, S.Palette.MENU_TITLE)
@@ -216,6 +246,8 @@ class LeaderboardScene(Scene):
         h = int(img.get_height() * pulse)
         img_s = pygame.transform.smoothscale(img, (w, h))
 
+        # چند لایه بزرگ‌تر با شفافیت متفاوت، درخشش اطراف عنوان را می‌سازند.
+        # Multiple enlarged layers with different alpha values create the title's glow.
         for layer in range(3, 0, -1):
             g = pygame.transform.smoothscale(img, (w + layer * 10, h + layer * 10))
             gs = pygame.Surface(g.get_size(), pygame.SRCALPHA)
@@ -232,6 +264,8 @@ class LeaderboardScene(Scene):
         )
         surface.blit(sub, sub.get_rect(center=(cx, SUBTITLE_Y)))
 
+        # شفافیت خط جداکننده در مرکز بیشترین مقدار را دارد و به دو انتها کاهش می‌یابد.
+        # The divider's opacity peaks at the center and fades toward both ends.
         line_w = int(W * 0.42)
         for i in range(line_w):
             t = i / line_w
@@ -241,6 +275,8 @@ class LeaderboardScene(Scene):
                              (x, DIVIDER_Y), (x, DIVIDER_Y + 1))
 
     def _draw_podium(self, surface: pygame.Surface) -> None:
+        # ترتیب چیدمان از چپ به راست، رتبه دوم، اول و سوم است.
+        # The left-to-right podium order is second place, first place, then third place.
         order = [1, 0, 2]
         n = min(len(self.top3), 3)
         actual_order = [i for i in order if i < n]
@@ -248,6 +284,8 @@ class LeaderboardScene(Scene):
         cx = W // 2
         base_y = PODIUM_CY + PODIUM_H_1 // 2
 
+        # عرض کل سکوها برای قرارگیری متقارن در مرکز صفحه محاسبه می‌شود.
+        # The total podium width is calculated to center the arrangement on the screen.
         total_w = len(actual_order) * PODIUM_W + (len(actual_order) - 1) * PODIUM_GAP
         start_x = cx - total_w // 2
 
@@ -264,6 +302,8 @@ class LeaderboardScene(Scene):
             else:
                 ph = PODIUM_H_3
 
+            # هر سکو با تأخیر مختص رتبه خود وارد می‌شود و ارتفاعش به‌صورت easing افزایش می‌یابد.
+            # Each podium enters with a rank-based delay, while its height grows using an easing curve.
             delay = rank * self.PODIUM_STAGGER
             local_t = (self._t - delay) / 0.45
             if local_t <= 0:
@@ -291,6 +331,9 @@ class LeaderboardScene(Scene):
 
         block_rect = pygame.Rect(x, base_y - h, w, h)
         block = pygame.Surface(block_rect.size, pygame.SRCALPHA)
+
+        # رنگ هر ردیف عمودی با توجه به فاصله از بالای سکو تغییر می‌کند تا گرادیان شکل بگیرد.
+        # Each horizontal row changes color according to its vertical position, creating a gradient.
         for i in range(h):
             t = i / max(1, h - 1)
             r = int(color[0] * (0.55 + 0.45 * (1 - t)))
@@ -303,6 +346,8 @@ class LeaderboardScene(Scene):
         border_col = (*color, alpha)
         pygame.draw.rect(surface, border_col, block_rect, 2)
 
+        # اندازه عدد رتبه در صورت نیاز متناسب با ارتفاع فعلی سکو کوچک می‌شود.
+        # The rank number is scaled down when necessary to fit the podium's current height.
         rank_img = self.font_rank.render(str(rank), True, color)
         max_text_h = int(h * 0.55)
         if rank_img.get_height() > max_text_h:
@@ -323,6 +368,8 @@ class LeaderboardScene(Scene):
             )
             surface.blit(label_img, label_rect)
 
+        # جزئیات رکورد پس از کامل‌تر شدن انیمیشن ورود سکو ظاهر می‌شوند.
+        # Record details appear once the podium entrance animation has progressed sufficiently.
         if entry_e > 0.7:
             info_alpha = int(255 * (entry_e - 0.7) / 0.3)
 
@@ -355,6 +402,8 @@ class LeaderboardScene(Scene):
         x = TABLE_X
         y_start = TABLE_TOP
 
+        # ردیف‌ها با تأخیر پلکانی، محوشدن تدریجی و حرکت افقی کوتاه نمایش داده می‌شوند.
+        # Rows appear with staggered delays, gradual fading, and a short horizontal slide.
         for i, entry in enumerate(self.rest):
             rank = i + 4
             delay = 0.4 + i * self.ROW_STAGGER
@@ -382,6 +431,8 @@ class LeaderboardScene(Scene):
         alpha: int,
         slide_x: int,
     ) -> None:
+        # پس‌زمینه نیمه‌شفاف و حاشیه هر ردیف، ساختار جدول را از پس‌زمینه جدا می‌کنند.
+        # A translucent background and border distinguish each row from the surrounding background.
         row_rect = pygame.Rect(x - 10, y - 2, TABLE_W + 20, ROW_H - 2)
         bg = pygame.Surface(row_rect.size, pygame.SRCALPHA)
         pygame.draw.rect(
@@ -397,6 +448,8 @@ class LeaderboardScene(Scene):
 
         cy = y + (ROW_H - 2) // 2
 
+        # اطلاعات هر رکورد در ستون‌های ثابت و با شفافیت هماهنگ با انیمیشن ردیف رسم می‌شوند.
+        # Each record field is rendered in a fixed column with opacity synchronized to the row animation.
         rank_img = self.font_row.render(f"#{rank}", True, (200, 220, 255))
         rank_img.set_alpha(alpha)
         surface.blit(rank_img, rank_img.get_rect(midleft=(x + slide_x, cy)))
@@ -429,6 +482,8 @@ class LeaderboardScene(Scene):
         cx = W // 2
         cy = H // 2 - 20
 
+        # هاله اطراف آیکون با حلقه‌های کاهنده و ضربان سینوسی ساخته می‌شود.
+        # The icon's halo is built from shrinking circles and a sinusoidal pulse.
         icon_r = 60
         pulse = 0.9 + 0.1 * math.sin(self._t * 2.0)
         for rr in range(int(icon_r * 1.6), 0, -6):
@@ -448,6 +503,8 @@ class LeaderboardScene(Scene):
         surface.blit(sub, sub.get_rect(center=(cx, cy + 110)))
 
     def _go_back(self) -> None:
+        # پخش صدای لغو در صورت در دسترس بودن سیستم صوتی؛ خطای صوتی مانع بازگشت نمی‌شود.
+        # Play the cancel sound when audio is available; audio errors do not prevent navigation.
         if self.audio is not None:
             try:
                 self.audio.play("ui_cancel")

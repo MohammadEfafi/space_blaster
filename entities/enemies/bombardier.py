@@ -1,4 +1,8 @@
+
 """
+entities/enemies/bombardier.py
+========================
+
 BOMBARDIER — بمب‌افکن سنگین (نسخه‌ی بازطراحی‌شده).
 """
 from __future__ import annotations
@@ -11,11 +15,17 @@ from entities.bullet import Bullet, BulletKind, Bomb
 from entities.enemies.base import Enemy, EnemyKind
 
 
+# بمب‌افکن سنگین با قابلیت حرکت سینوسی و پرتاب بمب
+# Heavy bomber enemy with sinusoidal movement and bomb-launching behavior
 class BombardierEnemy(Enemy):
     """BOMBARDIER — بمب‌افکن سنگین."""
 
+    # شناسه‌ی اختصاصی این نوع دشمن در سیستم Factory
+    # Unique identifier for this enemy type in the factory system
     KIND = EnemyKind.BOMBARDIER
 
+    # ویژگی‌های پایه و تنظیمات اختصاصی بمب‌افکن
+    # Base attributes and configuration specific to the bomber
     HP = 3
     RADIUS = 22
     SPEED = 65
@@ -25,10 +35,14 @@ class BombardierEnemy(Enemy):
     BULLET_SPEED = 100
     BODY_COLOR = (255, 130, 60)
 
+    # حرکت رو به پایین همراه با نوسان افقی سینوسی
+    # Move downward while applying sinusoidal horizontal movement
     def update_ai(self, dt: float) -> None:
         self.y += self.SPEED * dt
         self.x = self._base_x + math.sin(self._t * 0.6) * 12.0
 
+    # پرتاب دو بمب با سرعت ثابت به سمت پایین صفحه
+    # Launch two bombs downward at a constant speed
     def _do_shoot(self) -> list:
         """۲ بمب آروم به سمت پایین (کمتر برای راحتی بیشتر)."""
         if self.scene is None:
@@ -37,6 +51,8 @@ class BombardierEnemy(Enemy):
         # فقط ۲ بمب (به جای ۳) با فاصله‌ی بیشتر
         for offset_x in (-30, 30):
             try:
+                # ساخت بمب در موقعیت افقی تعیین‌شده نسبت به مرکز دشمن
+                # Create a bomb at the specified horizontal offset from the enemy's center
                 b = Bomb(
                     self.x + offset_x, self.y + self.radius * 0.6,
                     0, self.BULLET_SPEED,
@@ -47,6 +63,8 @@ class BombardierEnemy(Enemy):
             except Exception:
                 pass
         try:
+            # ثبت بمب‌های ساخته‌شده در صحنه و پخش صدای شلیک
+            # Register the created bombs in the scene and play the shooting sound
             for b in bullets:
                 self.scene.spawn_bullet(b)
             self.scene.audio.play("enemy_shoot")
@@ -54,14 +72,16 @@ class BombardierEnemy(Enemy):
             pass
         return bullets
 
-    # ═════════════════════════════════════════════════════════════════════
-    #  رسم — Bomber نظامی
-    # ═════════════════════════════════════════════════════════════════════
-
+    # رسم ظاهر اختصاصی بمب‌افکن نظامی
+    # Render the bomber's distinctive military-style appearance
     def draw_body(self, surface: pygame.Surface, alpha: int = 255) -> None:
+        # محاسبه‌ی اندازه و مختصات مرکزی برای اجزای گرافیکی
+        # Calculate the size and center coordinates used by the visual components
         r = int(self.radius * 1.3)
         cx, cy = int(self.x), int(self.y)
 
+        # تولید طیف رنگی موردنیاز برای بدنه و جزئیات بصری
+        # Generate the color variations used for the body and visual details
         base = self.tint(self.BODY_COLOR)
         dark = self._darker(base, 110)
         darker = self._darker(base, 170)
@@ -69,6 +89,8 @@ class BombardierEnemy(Enemy):
         yellow = (255, 210, 60)
 
         # ---- ۱. سایه‌ی زیر ----
+        # ایجاد سایه‌ی نرم برای نمایش عمق و فاصله از سطح بازی
+        # Create a soft shadow to convey depth and separation from the game surface
         sw, sh = int(r * 1.4), int(r * 0.4)
         shadow = pygame.Surface((sw * 2, sh * 2), pygame.SRCALPHA)
         for rr in range(sh, 0, -1):
@@ -79,6 +101,8 @@ class BombardierEnemy(Enemy):
         surface.blit(shadow, (cx - sw, cy + int(r * 0.6) - sh))
 
         # ---- ۲. هاله‌ی نارنجی ملایم ----
+        # رسم هاله‌ی نورانی اطراف بدنه با ترکیب تدریجی دایره‌های نیمه‌شفاف
+        # Draw a glowing aura around the body using layered translucent circles
         aura_r = int(r * 1.5)
         aura = pygame.Surface((aura_r * 2, aura_r * 2), pygame.SRCALPHA)
         for rr in range(aura_r, 0, -4):
@@ -89,6 +113,8 @@ class BombardierEnemy(Enemy):
                      special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۳. بال‌های پهن (دو لایه) ----
+        # رسم دو بال متقارن با لایه‌ی زیرین تیره و حاشیه‌ی روشن
+        # Draw two symmetrical wings with a dark base layer and bright outline
         for sign in (-1, 1):
             # بال زیر (تیره، بزرگ‌تر)
             wing_back = [
@@ -101,16 +127,9 @@ class BombardierEnemy(Enemy):
             pygame.draw.polygon(surface, bright, wing_back, 3)
 
             # خطوط زرد-مشکی روی بال
-            for i in range(3):
-                t1 = i / 3
-                t2 = (i + 0.4) / 3
-                x1 = cx + sign * int(r * (0.9 + t1 * 0.65))
-                x2 = cx + sign * int(r * (0.9 + t2 * 0.65))
-                pygame.draw.line(surface, yellow,
-                                 (x1, cy - int(r * 0.35)),
-                                 (x2, cy - int(r * 0.35)), 3)
-
             # چراغ ناوبری چشمک‌زن
+            # محاسبه‌ی شدت نور چراغ و تعیین رنگ آن بر اساس سمت بال
+            # Calculate the navigation light intensity and select its color based on the wing side
             blink = 0.5 + 0.5 * math.sin(self._t * 4 + (0 if sign < 0 else math.pi))
             tip_x = cx + sign * int(r * 1.6)
             tip_y = cy - int(r * 0.05)
@@ -127,6 +146,8 @@ class BombardierEnemy(Enemy):
                 pygame.draw.circle(surface, color, (tip_x, tip_y), 3)
 
         # ---- ۴. بدنه‌ی کشیده (شبیه بمب‌افکن B-2) ----
+        # تعریف چندضلعی اصلی بدنه و رسم لایه‌های سایه، رنگ پایه و حاشیه
+        # Define the main body polygon and draw its shadow, base color, and outline layers
         hull = [
             (cx - int(r * 0.7), cy - int(r * 0.5)),
             (cx - int(r * 0.3), cy - int(r * 0.65)),
@@ -140,6 +161,8 @@ class BombardierEnemy(Enemy):
         pygame.draw.polygon(surface, bright, hull, 3)
 
         # پنل زره میانی (روشن‌تر)
+        # ایجاد پنل مرکزی برای نمایش جزئیات و لایه‌بندی بدنه
+        # Add a central panel to provide body detail and visual layering
         mid = [
             (cx - int(r * 0.45), cy - int(r * 0.35)),
             (cx - int(r * 0.2), cy - int(r * 0.45)),
@@ -152,6 +175,8 @@ class BombardierEnemy(Enemy):
         pygame.draw.polygon(surface, bright, mid, 1)
 
         # خطوط افقی روی بدنه
+        # افزودن خطوط جزئیات روی پنل مرکزی بدنه
+        # Add horizontal detail lines across the central body panel
         for i in range(2):
             ly = cy - int(r * 0.15) + i * int(r * 0.25)
             pygame.draw.line(surface, dark,
@@ -159,6 +184,8 @@ class BombardierEnemy(Enemy):
                              (cx + int(r * 0.45), ly), 2)
 
         # ---- ۵. کابین شیشه‌ای ----
+        # رسم کابین با لایه‌ی بیرونی و بازتاب روشن روی شیشه
+        # Draw the cockpit with an outer layer and a bright glass highlight
         cab_y = cy - int(r * 0.45)
         cab_w = max(5, int(r * 0.35))
         cab_h = max(4, int(r * 0.15))
@@ -171,6 +198,8 @@ class BombardierEnemy(Enemy):
             pygame.draw.ellipse(surface, (60, 160, 220), inner)
 
         # ---- ۶. دو موتور کناری با شعله ----
+        # رسم دو موتور متقارن و ایجاد شعله‌هایی با طول متغیر
+        # Draw two symmetrical engines with dynamically varying flame lengths
         for sign in (-1, 1):
             ex = cx + sign * int(r * 0.5)
             ey = cy + int(r * 0.45)
@@ -178,6 +207,8 @@ class BombardierEnemy(Enemy):
             flame_len = int(r * 0.4 * flicker)
 
             # هاله‌ی شعله
+            # ایجاد درخشش افزایشی اطراف شعله‌ی موتور
+            # Create an additive glow around the engine flame
             for rr in range(8, 0, -2):
                 a = int(150 * (1 - rr / 8) * flicker)
                 if a > 0:
@@ -187,6 +218,8 @@ class BombardierEnemy(Enemy):
                                  special_flags=pygame.BLEND_RGBA_ADD)
 
             # شعله (سه لایه)
+            # رسم شعله در سه لایه با رنگ‌های متفاوت برای ایجاد عمق نوری
+            # Draw the flame in three differently colored layers to create visual depth
             pygame.draw.polygon(surface, (255, 100, 20), [
                 (ex - 6, ey), (ex + 6, ey), (ex, ey + flame_len),
             ])
@@ -198,6 +231,8 @@ class BombardierEnemy(Enemy):
             ])
 
         # ---- ۷. سه بمب بزرگ زیر بدنه (بصری) ----
+        # نمایش سه بمب تزئینی در زیر بدنه‌ی هواپیما
+        # Display three decorative bombs beneath the aircraft body
         bomb_y = cy + int(r * 0.55)
         for offset in (-30, 0, 30):
             bx = cx + offset
@@ -206,9 +241,13 @@ class BombardierEnemy(Enemy):
             pygame.draw.ellipse(surface, (40, 40, 55), bomb_rect)
             pygame.draw.ellipse(surface, dark, bomb_rect, 2)
             # فیوز درخشان
+            # محاسبه‌ی رنگ و شدت چشمک‌زدن فیوز بمب
+            # Calculate the bomb fuse color and its blinking intensity
             flicker = 0.5 + 0.5 * math.sin(self._t * 12 + offset * 0.5)
             fz_color = (255, int(150 + 100 * flicker), 40)
             # هاله‌ی فیوز
+            # ایجاد هاله‌ی نورانی اطراف فیوز
+            # Create a glowing halo around the fuse
             for rr in range(8, 0, -1):
                 a = int(180 * (1 - rr / 8) * flicker)
                 if a > 0:
@@ -220,6 +259,8 @@ class BombardierEnemy(Enemy):
             pygame.draw.circle(surface, (255, 255, 255), (bx, bomb_y - 12), 1)
 
         # ---- ۸. چراغ قرمز هشدار ----
+        # ایجاد چراغ‌های هشدار چشمک‌زن روی بدنه
+        # Create blinking warning lights on the aircraft body
         blink = 0.5 + 0.5 * math.sin(self._t * 5.0)
         for sign in (-1, 1):
             lx = cx + sign * int(r * 0.3)
@@ -236,6 +277,8 @@ class BombardierEnemy(Enemy):
                 pygame.draw.circle(surface, (255, 100, 100), (lx, ly), 3)
 
         # ---- ۹. نوار HP ----
+        # نمایش نوار سلامتی فقط زمانی که دشمن آسیب دیده باشد
+        # Display the health bar only when the enemy has taken damage
         if self.hp < self.max_hp:
             w = int(r * 1.8)
             h = 4

@@ -39,9 +39,7 @@ if TYPE_CHECKING:
     from scenes.gameplay import GameplayScene
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  کلاس پایه‌ی Player
-# ═══════════════════════════════════════════════════════════════════════════
+
 
 class Player(Entity):
     """
@@ -56,17 +54,13 @@ class Player(Entity):
         ⑥  اگر الگوی شلیک خاصی می‌خواهی، _get_shot_angles() را Override کن
     """
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  شناسه (در زیرکلاس بازنویسی می‌شود)
-    # ─────────────────────────────────────────────────────────────────────
+
 
     NAME:        str = "SHIP"
     DESCRIPTION: str = "Standard issue vessel."
     KIND_KEY:    str = "ship"
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  آمار پایه (در زیرکلاس بازنویسی می‌شود)
-    # ─────────────────────────────────────────────────────────────────────
+
 
     MAX_HP:       int   = 3
     SPEED:        float = 340.0
@@ -81,9 +75,7 @@ class Player(Entity):
     ACCEL: float = 9.0     # ضریب شتاب (هرچه بیشتر، سریع‌تر به سرعت هدف می‌رسد)
     DRAG:  float = 7.5     # ضریب میرایی وقتی ورودی نیست
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رنگ‌ها (در زیرکلاس بازنویسی می‌شود)
-    # ─────────────────────────────────────────────────────────────────────
+
 
     PRIMARY_COLOR:   tuple[int, int, int] = (60, 220, 255)
     SECONDARY_COLOR: tuple[int, int, int] = (30, 130, 180)
@@ -91,11 +83,11 @@ class Player(Entity):
     HIGHLIGHT_COLOR: tuple[int, int, int] = (235, 245, 255)
     FLAME_COLOR:     tuple[int, int, int] = (255, 150, 40)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  سازنده
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def __init__(self, scene: Optional["GameplayScene"] = None) -> None:
+        # مختصات شروع سفینه در مرکز افقی و نزدیک پایین صفحه تعیین می‌شوند.
+        # The ship starts horizontally centered near the bottom of the screen.
         start_x = S.Window.WIDTH / 2
         start_y = S.Window.HEIGHT - S.PlayerCfg.RESPAWN_Y
 
@@ -107,31 +99,41 @@ class Player(Entity):
         )
 
         # ---- وضعیت حرکت ----
+        # سرعت هدف از ورودی بازیکن محاسبه می‌شود.
+        # Target velocity is calculated from player input.
         self.target_vx: float = 0.0
         self.target_vy: float = 0.0
 
         # ---- شلیک ----
+        # وضعیت‌های زمانی و بصری مربوط به شلیک نگهداری می‌شوند.
+        # Shooting timers and visual effects are stored here.
         self.shoot_cd: float = 0.0
         self.muzzle_flash: float = 0.0
         self.recoil: float = 0.0
 
         # ---- نامیرایی ----
+        # زمان نامیرایی اولیه و مدت محافظ فعال نگهداری می‌شوند.
+        # Initial invulnerability and active shield durations are stored here.
         self.invuln_time: float = self.INVULN_TIME
         self.shield_time: float = 0.0  
 
         # ---- Power-Up ----
+        # مدت باقی‌مانده از پاورآپ شلیک را مشخص می‌کند.
+        # Tracks the remaining duration of the shooting power-up.
         self.powerup_time: float = 0.0
 
         # ---- Thruster ----
+        # زمان‌بند تولید ذرات موتور را کنترل می‌کند.
+        # Controls the timing of thruster particle emission.
         self._thruster_timer: float = 0.0
         self._thruster_rate: float = 0.025
 
         # ---- زمان انیمیشن ----
+        # زمان مشترک انیمیشن‌ها و مدت Rapid Fire نگهداری می‌شوند.
+        # Shared animation time and Rapid Fire duration are stored here.
         self._t: float = 0.0
         self.rapid_fire_time: float = 0.0
-    # ─────────────────────────────────────────────────────────────────────
-    #  هوک‌های قابل Override
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def draw_ship(self, surface: pygame.Surface, cx: int, cy: int) -> None:
         """
@@ -160,15 +162,17 @@ class Player(Entity):
         زاویه‌های شلیک (درجه). -90 = مستقیم به بالا.
         زیرکلاس‌ها برای الگوی شلیک خاص، این را Override می‌کنند.
         """
+        # هنگام فعال بودن پاورآپ، شلیک به سه جهت انجام می‌شود.
+        # While the power-up is active, shots are fired in three directions.
         if self.powerup_time > 0.0:
             return [-102.0, -90.0, -78.0]
         return [-90.0]
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  به‌روزرسانی
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def update_entity(self, dt: float) -> None:
+        # زمان انیمیشن با زمان سپری‌شده در فریم به‌روزرسانی می‌شود.
+        # Animation time advances according to the elapsed frame time.
         self._t += dt
 
         if self.shoot_cd > 0.0:
@@ -187,21 +191,25 @@ class Player(Entity):
             self.recoil = max(0.0, self.recoil - dt * 8.0)
 
         # ---- حرکت ----
+        # ورودی و موقعیت سفینه در هر فریم به‌روزرسانی می‌شوند.
+        # Input and ship position are updated on each frame.
         self._handle_movement(dt)
 
         # ---- Thruster particles ----
+        # ذرات موتور فقط در صورت اتصال سفینه به صحنه تولید می‌شوند.
+        # Thruster particles are emitted only when the ship is attached to a scene.
         if self.scene is not None:
             self._emit_thruster(dt)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  حرکت
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def _handle_movement(self, dt: float) -> None:
         if self.scene is None:
             return
 
         # ---- ورودی ----
+        # محورهای حرکت از کلیدهای فشرده‌شده استخراج می‌شوند.
+        # Movement axes are derived from the currently held keys.
         axis_x = 0.0
         axis_y = 0.0
         if self.scene.any_held(S.Keys.LEFT):
@@ -214,6 +222,7 @@ class Player(Entity):
             axis_y += 1.0
 
         # نرمال‌سازی برای حرکت قطری یکنواخت
+        # Normalize diagonal input to maintain consistent movement speed.
         mag = math.hypot(axis_x, axis_y)
         if mag > 0.001:
             axis_x /= mag
@@ -223,36 +232,46 @@ class Player(Entity):
         self.target_vy = axis_y * self.SPEED
 
         # ---- شتاب (lerp به سمت سرعت هدف) ----
+        # سرعت فعلی به‌صورت تدریجی به سرعت هدف نزدیک می‌شود.
+        # Current velocity gradually approaches the target velocity.
         blend = min(1.0, dt * self.ACCEL)
         self.vx += (self.target_vx - self.vx) * blend
         self.vy += (self.target_vy - self.vy) * blend
 
         # ---- میرایی اضافی وقتی ورودی نیست ----
+        # در نبود ورودی، سرعت با ضریب میرایی کاهش پیدا می‌کند.
+        # Without input, velocity is reduced by the drag factor.
         if mag < 0.001:
             damp = max(0.0, 1.0 - dt * self.DRAG)
             self.vx *= damp
             self.vy *= damp
 
         # ---- اعمال موقعیت ----
+        # موقعیت جدید با استفاده از سرعت و زمان فریم محاسبه می‌شود.
+        # The new position is calculated from velocity and frame time.
         self.x += self.vx * dt
         self.y += self.vy * dt
 
         # ---- کلیمپ به صفحه ----
+        # موقعیت سفینه به محدوده‌ی قابل‌مشاهده‌ی صفحه محدود می‌شود.
+        # The ship's position is clamped to the visible screen boundaries.
         margin = self.radius + 6
         self.x = max(margin, min(S.Window.WIDTH - margin, self.x))
         self.y = max(margin, min(S.Window.HEIGHT - margin, self.y))
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  Thruster Particles
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def _emit_thruster(self, dt: float) -> None:
+        # سرعت رو به بالای سفینه، نرخ تولید ذرات موتور را افزایش می‌دهد.
+        # Upward ship velocity increases the thruster particle emission rate.
         speed_factor = 1.0 + max(0.0, -self.vy) / 300.0
         self._thruster_timer -= dt * speed_factor
         if self._thruster_timer > 0.0:
             return
         self._thruster_timer = self._thruster_rate * random.uniform(0.7, 1.3)
 
+        # برای هر خروجی موتور، یک ذره با سرعت و انحراف تصادفی ایجاد می‌شود.
+        # A particle with randomized velocity is created for each engine outlet.
         for ox, oy, _ in self.get_engine_offsets():
             px = self.x + ox * self.radius
             py = self.y + oy * self.radius
@@ -265,11 +284,11 @@ class Player(Entity):
             except Exception:
                 pass
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  شلیک
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def try_shoot(self) -> list[Bullet]:
+        # در زمان cooldown یا پس از نابودی، شلیک انجام نمی‌شود.
+        # Shooting is blocked during cooldown or after the ship is destroyed.
         if self.shoot_cd > 0.0 or not self.alive:
             return []
         self.shoot_cd = self.current_shoot_cd 
@@ -277,6 +296,8 @@ class Player(Entity):
         self.recoil = 0.6
 
         bullets: list[Bullet] = []
+        # گلوله‌ها بر اساس زاویه‌های تعیین‌شده توسط سفینه ساخته می‌شوند.
+        # Bullets are created using the angles defined by the ship.
         for angle_deg in self._get_shot_angles():
             a = math.radians(angle_deg)
             vx = math.cos(a) * self.BULLET_SPEED
@@ -296,6 +317,8 @@ class Player(Entity):
             ))
 
         # ---- صدا ----
+        # پخش صدای شلیک در صورت وجود صحنه تلاش می‌شود.
+        # The shooting sound is played when a scene is available.
         if self.scene is not None:
             try:
                 self.scene.audio.play("player_shoot")
@@ -304,9 +327,7 @@ class Player(Entity):
 
         return bullets
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  قدرت‌دهی (Power-Up)
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def grant_powerup(self, duration: Optional[float] = None) -> None:
         """فعال‌سازی الگوی شلیک قدرتمند برای مدت مشخص."""
@@ -314,32 +335,42 @@ class Player(Entity):
         self.powerup_time = d
 
     def grant_shield(self, duration: float) -> None:
+        # مدت محافظ با مدت فعلی مقایسه می‌شود تا زمان باقی‌مانده کاهش پیدا نکند.
+        # The shield duration is compared with its current value to avoid shortening it.
         self.shield_time = max(self.shield_time, duration)
     @property
     def is_invulnerable(self) -> bool:
         """آیا الان به هر دلیلی (invuln یا shield) آسیب‌ناپذیره؟"""
+        # آسیب‌ناپذیری با فعال بودن هرکدام از دو وضعیت برقرار است.
+        # Invulnerability is active when either of the two states is active.
         return self.invuln_time > 0.0 or self.shield_time > 0.0
 
     @property
     def current_shoot_cd(self) -> float:
         """Cooldown فعلی — نصف می‌شه اگر Rapid Fire فعاله."""
+        # در حالت Rapid Fire، فاصله‌ی زمانی بین شلیک‌ها نصف می‌شود.
+        # Rapid Fire halves the interval between consecutive shots.
         if self.rapid_fire_time > 0.0:
             return self.SHOOT_CD * 0.5
         return self.SHOOT_CD
 
     def grant_rapid_fire(self, duration: float) -> None:
+        # مدت Rapid Fire افزایش می‌یابد، بدون اینکه زمان فعال فعلی کوتاه شود.
+        # Rapid Fire duration is extended without shortening the active duration.
         self.rapid_fire_time = max(self.rapid_fire_time, duration)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  آسیب
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def take_damage(self, damage: int) -> bool:
+        # در صورت آسیب‌ناپذیری یا نابودی، آسیب پذیرفته نمی‌شود.
+        # Damage is rejected while invulnerable or already destroyed.
         if self.is_invulnerable or not self.alive:
             return False
         return super().take_damage(damage)
 
     def on_hit(self, damage: int) -> None:
+        # پس از برخورد، دوره‌ی نامیرایی دوباره فعال می‌شود.
+        # The invulnerability period is restarted after a hit.
         self.invuln_time = self.INVULN_TIME
         if self.scene is not None:
             try:
@@ -348,6 +379,8 @@ class Player(Entity):
                 pass
 
     def on_death(self) -> None:
+        # انفجار سفینه در صورت اتصال به صحنه ایجاد می‌شود.
+        # The ship explosion is spawned when a scene is available.
         if self.scene is not None:
             try:
                 self.scene.spawn_player_explosion(self.x, self.y)
@@ -357,29 +390,35 @@ class Player(Entity):
     def on_spawn(self) -> None:
         self.angle = -90.0
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رسم
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def draw_entity(self, surface: pygame.Surface) -> None:
         # ---- چشمک نامیرایی ----
+        # در فریم‌های مشخصی از نامیرایی، هاله رسم و نمایش بدنه متوقف می‌شود.
+        # On selected invulnerability frames, the aura is drawn instead of the ship.
         if self.invuln_time > 0.0:
             if int(self.invuln_time * 12) % 2 == 0:
                 self._draw_invuln_aura(surface)
                 return
 
         # ---- محاسبه‌ی مرکز (با recoil) ----
+        # پس‌روی ناشی از شلیک در مختصات عمودی مرکز لحاظ می‌شود.
+        # Vertical recoil is applied to the ship's drawing center.
         offset_y = self.recoil * 3.0
         cx = int(self.x)
         cy = int(self.y + offset_y)
 
         # ---- شعله‌ی موتور ----
+        # شعله‌های موتور پیش از بدنه رسم می‌شوند تا پشت سفینه قرار بگیرند.
+        # Engine flames are drawn before the hull so they appear behind the ship.
         self._draw_engine_flames(surface)
 
         # ---- بدنه‌ی سفینه (زیرکلاس) ----
         self.draw_ship(surface, cx, cy)
 
         # ---- افکت‌های شرطی ----
+        # افکت‌های شلیک، پاورآپ و محافظ فقط در زمان فعال بودنشان رسم می‌شوند.
+        # Shooting, power-up, and shield effects are drawn only while active.
         if self.muzzle_flash > 0.05:
             self._draw_muzzle_flash(surface, cx, cy)
 
@@ -389,15 +428,15 @@ class Player(Entity):
         if self.shield_time > 0.0:           # ← اضافه کن
             self._draw_shield_aura(surface, cx, cy)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  اجزای رسم مشترک
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def _draw_engine_flames(self, surface: pygame.Surface) -> None:
         r = self.radius
         thrust = max(0.0, -self.vy) * 0.05
         base_len = r * 1.4 + thrust
 
+        # شعله‌ها بر اساس موقعیت و مقیاس خروجی‌های موتور رسم می‌شوند.
+        # Flames are drawn using each engine outlet's position and scale.
         for ox, oy, scale in self.get_engine_offsets():
             px = int(self.x + ox * r)
             py = int(self.y + oy * r)
@@ -411,6 +450,8 @@ class Player(Entity):
         x: int, y: int,
         length: float, width: float,
     ) -> None:
+        # نوسان سینوسی طول شعله، جلوه‌ی لرزش آن را ایجاد می‌کند.
+        # Sinusoidal length variation creates the flame's flickering effect.
         flicker = 1.0 + 0.25 * math.sin(self._t * 34.0 + x * 0.1)
         length = length * flicker
         w = max(1, int(width))
@@ -432,12 +473,16 @@ class Player(Entity):
         ])
 
     def _draw_muzzle_flash(self, surface: pygame.Surface, cx: int, cy: int) -> None:
+        # اندازه‌ی فلش دهانه‌ی سلاح با شدت افکت تغییر می‌کند.
+        # Muzzle flash size changes according to the effect intensity.
         a = self.muzzle_flash
         r = int(self.radius * 0.7 * (1.0 + a * 0.6))
         if r <= 0:
             return
         flash = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
         c = self.PRIMARY_COLOR
+        # حلقه‌های هم‌مرکز با شفافیت متغیر، درخشش تدریجی ایجاد می‌کنند.
+        # Concentric circles with varying alpha create a gradual glow.
         for rr in range(r, 0, -1):
             alpha = int(180 * a * (1 - rr / r))
             if alpha <= 0:
@@ -450,6 +495,8 @@ class Player(Entity):
                      special_flags=pygame.BLEND_RGBA_ADD)
 
     def _draw_powerup_ring(self, surface: pygame.Surface, cx: int, cy: int) -> None:
+        # حلقه‌ی پاورآپ با نقاطی که در اطراف سفینه می‌چرخند نمایش داده می‌شود.
+        # The power-up ring is displayed as dots rotating around the ship.
         r = int(self.radius * 2.0)
         num_dots = 14
         dot_size = max(2, int(self.radius * 0.14))
@@ -474,6 +521,8 @@ class Player(Entity):
             )
 
     def _draw_invuln_aura(self, surface: pygame.Surface) -> None:
+        # هاله‌ی نامیرایی با لایه‌های دایره‌ای نیمه‌شفاف ساخته می‌شود.
+        # The invulnerability aura is built from translucent circular layers.
         r = int(self.radius * 2.2)
         if r <= 0:
             return
@@ -488,11 +537,11 @@ class Player(Entity):
                      special_flags=pygame.BLEND_RGBA_ADD)
         pygame.draw.circle(surface, (100, 240, 255), (cx, cy), r - 4, 2)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  کمکی‌ها
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def reset_to_start(self) -> None:
+        # وضعیت سفینه برای شروع مجدد بازی به مقادیر اولیه بازمی‌گردد.
+        # The ship state is restored to its initial values for a new game.
         self.x = S.Window.WIDTH / 2
         self.y = S.Window.HEIGHT - S.PlayerCfg.RESPAWN_Y
         self.vx = 0.0
@@ -507,6 +556,8 @@ class Player(Entity):
 
     def _draw_shield_aura(self, surface: pygame.Surface, cx: int, cy: int) -> None:
         """هاله‌ی محافظ آبی — کاملاً متمایز از aura نامیرایی."""
+        # هاله‌ی محافظ با ضربان زمانی رسم می‌شود تا از هاله‌ی نامیرایی متمایز باشد.
+        # The shield aura uses a time-based pulse to distinguish it from the invulnerability aura.
         r = int(self.radius * 2.4)
         if r <= 0:
             return

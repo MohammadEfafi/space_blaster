@@ -22,15 +22,21 @@ entities.player
 """
 
 # ---- کلاس پایه ----
+# کلاس پایه برای دسترسی مستقیم از پکیج اصلی در دسترس قرار می‌گیرد.
+# The base class is exposed directly through the main package.
 from entities.player.base import Player
 
 # ---- سفینه‌ها ----
+# کلاس‌های سفینه‌ها برای import مستقیم از این پکیج در دسترس هستند.
+# Ship classes are available for direct import from this package.
 from entities.player.devastator import Devastator
 from entities.player.interceptor import Interceptor
 from entities.player.phantom import Phantom
 from entities.player.vanguard import Vanguard
 
 # ---- رجیستری و API ----
+# رجیستری و توابع مرتبط، رابط عمومی مدیریت سفینه‌ها را تشکیل می‌دهند.
+# The registry and related functions form the public ship-management API.
 from entities.player.registry import (
     DEFAULT_SHIP_KEY,
     SHIP_CLASSES,

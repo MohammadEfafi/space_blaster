@@ -37,6 +37,8 @@ from systems.audio import AudioSystem
 from systems.scores import HighScoreStore
 
 
+# ساختار داده‌ی ذرات جشن؛ موقعیت، سرعت، طول عمر و ویژگی‌های ظاهری هر ذره را نگهداری می‌کند.
+# Celebration particle data structure; stores each particle's position, velocity, lifetime, and visual properties.
 @dataclass
 class _CelebrationParticle:
     x: float
@@ -54,12 +56,16 @@ class _CelebrationParticle:
 class GameOverScene(Scene):
     """صفحه‌ی پایان بازی."""
 
+    # زمان‌بندی انیمیشن ورود عنوان، نمایش آمار و ظاهر شدن دکمه‌ها.
+    # Timing configuration for the title entrance, statistics reveal, and button appearance.
     TITLE_IN_TIME: float = 0.9
     STATS_REVEAL_DELAY: float = 0.5
     STATS_REVEAL_TIME: float = 0.6
     BUTTONS_DELAY: float = 1.6
     BUTTONS_FADE_TIME: float = 0.4
 
+    # آماده‌سازی منابع بصری، دریافت نتایج بازی و مقداردهی اجزای صفحه‌ی پایان بازی.
+    # Initializes visual resources, retrieves game results, and prepares the Game Over scene components.
     def on_enter(self) -> None:
         # ---- فونت‌ها ----
         self.font_title  = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.HUGE, bold=True)
@@ -70,11 +76,15 @@ class GameOverScene(Scene):
         self.font_small  = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.SMALL)
 
         # ---- آمار ----
+        # دریافت امتیاز نهایی، موج طی‌شده و سفینه‌ی انتخاب‌شده از وضعیت بازی.
+        # Retrieves the final score, reached wave, and selected ship from the game state.
         self.score = int(getattr(self.game, "last_score", 0))
         self.wave = int(getattr(self.game, "last_wave", 0))
         ship_key = getattr(self.game, "selected_ship", "phantom")
 
         # ---- ثبت در جدول امتیازات (فقط یک بار!) ----
+        # ثبت نتیجه در جدول امتیازات و دریافت وضعیت رکورد جدید و رتبه‌ی بازیکن.
+        # Submits the result to the leaderboard and retrieves the new-record status and player rank.
         self.store = self.game.scores
         self.is_new_high, self.rank = self.store.submit(
             self.score, self.wave, ship_key,
@@ -85,12 +95,16 @@ class GameOverScene(Scene):
         self.total_games = self.store.total_games
 
         # ---- زمان‌بندی ----
+        # زمان‌سنج‌های مستقل برای کنترل پیشرفت انیمیشن‌های مختلف صفحه.
+        # Independent timers control the progress of the scene's different animations.
         self._t: float = 0.0
         self._t_title: float = 0.0
         self._t_stats: float = 0.0
         self._t_buttons: float = 0.0
 
         # ---- ستاره‌ها ----
+        # ایجاد ستاره‌ها با موقعیت، سرعت حرکت و اندازه‌ی تصادفی برای پس‌زمینه‌ی متحرک.
+        # Creates stars with randomized positions, movement speeds, and sizes for the animated background.
         self.stars: list[list[float]] = []
         for _ in range(80):
             self.stars.append([
@@ -101,11 +115,15 @@ class GameOverScene(Scene):
             ])
 
         # ---- ذرات جشن ----
+        # در صورت ثبت رکورد جدید، انفجار اولیه‌ی ذرات جشن ایجاد می‌شود.
+        # An initial celebration particle burst is created when a new high score is achieved.
         self.celebration: list[_CelebrationParticle] = []
         if self.is_new_high:
             self._spawn_celebration_burst()
 
         # ---- دکمه‌ها ----
+        # ساخت دکمه‌های شروع مجدد، بازگشت به منوی اصلی و خروج از بازی.
+        # Creates the Play Again, Main Menu, and Quit buttons.
         from ui.button import Button
 
         y0 = S.Window.HEIGHT - 190
@@ -119,19 +137,22 @@ class GameOverScene(Scene):
         self.buttons[self.selected_idx].selected = True
 
         # ---- Audio ----
+        # دریافت سیستم صوتی بازی و پخش موسیقی منو با محوشدن تدریجی.
+        # Retrieves the game's audio system and plays the menu music with a fade transition.
         self.audio: Optional[AudioSystem] = getattr(self.game, "audio", None)
         if self.audio:
             self.audio.play_music("music_menu", loop=True, fade_ms=800)
 
+    # آزادسازی فهرست دکمه‌ها، ستاره‌ها و ذرات هنگام خروج از صحنه.
+    # Clears the button, star, and particle collections when leaving the scene.
     def on_exit(self) -> None:
         self.buttons.clear()
         self.stars.clear()
         self.celebration.clear()
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  ورودی
-    # ─────────────────────────────────────────────────────────────────────
 
+    # پردازش ورودی‌های صفحه‌کلید و ماوس برای کنترل دکمه‌های صفحه.
+    # Processes keyboard and mouse input to control the scene's buttons.
     def handle_event(self, event: pygame.event.Event) -> None:
         if self._t_buttons < 0.5:
             return
@@ -150,34 +171,45 @@ class GameOverScene(Scene):
             if b.handle_event(event):
                 break
 
+    # جابه‌جایی انتخاب فعال بین دکمه‌ها با پیمایش چرخشی و پخش صدای رابط کاربری.
+    # Moves the active selection between buttons with wraparound navigation and plays a UI sound.
     def _move_selection(self, delta: int) -> None:
         self.buttons[self.selected_idx].selected = False
         self.selected_idx = (self.selected_idx + delta) % len(self.buttons)
         self.buttons[self.selected_idx].selected = True
         self._play_ui("ui_move")
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  به‌روزرسانی
-    # ─────────────────────────────────────────────────────────────────────
 
+    # به‌روزرسانی زمان‌بندی انیمیشن‌ها، پس‌زمینه، ذرات و وضعیت دکمه‌ها.
+    # Updates animation timers, the background, particles, and button states.
     def update(self, dt: float) -> None:
         self._t += dt
 
+        # پیشرفت تدریجی انیمیشن ورود عنوان تا رسیدن به مقدار نهایی.
+        # Progresses the title entrance animation until it reaches its final value.
         if self._t_title < 1.0:
             self._t_title = min(1.0, self._t_title + dt / self.TITLE_IN_TIME)
 
+        # نمایش تدریجی آمار پس از سپری‌شدن زمان تأخیر تعیین‌شده.
+        # Gradually reveals the statistics after the configured delay.
         if self._t > self.STATS_REVEAL_DELAY and self._t_stats < 1.0:
             self._t_stats = min(1.0, self._t_stats + dt / self.STATS_REVEAL_TIME)
 
+        # ظاهرشدن تدریجی دکمه‌ها پس از پایان زمان انتظار.
+        # Gradually fades in the buttons after the configured delay.
         if self._t > self.BUTTONS_DELAY and self._t_buttons < 1.0:
             self._t_buttons = min(1.0, self._t_buttons + dt / self.BUTTONS_FADE_TIME)
 
+        # حرکت ستاره‌ها به سمت پایین و انتقال مجدد آن‌ها به بالای صفحه پس از خروج.
+        # Moves stars downward and wraps them back to the top after they leave the screen.
         for st in self.stars:
             st[1] += st[2] * dt
             if st[1] > S.Window.HEIGHT + 4:
                 st[1] = -4
                 st[0] = random.uniform(0, S.Window.WIDTH)
 
+        # به‌روزرسانی حرکت، چرخش و طول عمر ذرات جشن و حذف ذرات منقضی‌شده.
+        # Updates celebration particle movement, rotation, and lifetime while removing expired particles.
         if self.celebration:
             alive: list[_CelebrationParticle] = []
             for p in self.celebration:
@@ -192,9 +224,13 @@ class GameOverScene(Scene):
                 alive.append(p)
             self.celebration = alive
 
+            # تولید انفجارهای کوچک و تصادفی در طول نمایش رکورد جدید.
+            # Generates small random bursts while the new high score celebration is active.
             if self.is_new_high and random.random() < dt * 5.0:
                 self._spawn_celebration_burst(count=8, small=True)
 
+        # به‌روزرسانی دکمه‌ها و هماهنگ‌سازی انتخاب فعال با موقعیت نشانگر ماوس.
+        # Updates buttons and synchronizes the active selection with the mouse cursor position.
         if self._t_buttons > 0.5:
             mouse_pos = pygame.mouse.get_pos()
             for i, b in enumerate(self.buttons):
@@ -204,10 +240,9 @@ class GameOverScene(Scene):
                     self.selected_idx = i
                     b.selected = True
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رندر
-    # ─────────────────────────────────────────────────────────────────────
 
+    # ترتیب رسم اجزای صحنه؛ از پس‌زمینه تا عنوان، آمار، دکمه‌ها و اطلاعات پایین صفحه.
+    # Draws scene components in order, from the background to the title, statistics, buttons, and footer.
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill(S.Palette.BG_DEEP)
         self._draw_backdrop(surface)
@@ -220,6 +255,8 @@ class GameOverScene(Scene):
             self._draw_buttons(surface)
         self._draw_footer(surface)
 
+    # ایجاد پس‌زمینه‌ی گرادیانی با ترکیب تدریجی رنگ از بالای صفحه به پایین.
+    # Creates a gradient background by gradually blending colors from the top to the bottom of the screen.
     def _draw_backdrop(self, surface: pygame.Surface) -> None:
         w, h = surface.get_size()
         overlay = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -233,6 +270,8 @@ class GameOverScene(Scene):
             pygame.draw.line(overlay, (r, g, b, 255), (0, y), (w, y))
         surface.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
+    # رسم ستاره‌های پس‌زمینه با اندازه‌ی متناسب با مقدار شعاع آن‌ها.
+    # Draws background stars with sizes determined by their radius values.
     def _draw_stars(self, surface: pygame.Surface) -> None:
         for x, y, _, r in self.stars:
             pygame.draw.circle(
@@ -240,6 +279,8 @@ class GameOverScene(Scene):
                 (int(x), int(y)), max(1, int(r * 0.7)),
             )
 
+    # ایجاد تیرگی تدریجی در لبه‌های صفحه برای تمرکز بصری روی بخش مرکزی.
+    # Creates gradual darkening around the screen edges to draw visual attention toward the center.
     def _draw_vignette(self, surface: pygame.Surface) -> None:
         w, h = surface.get_size()
         thickness = 120
@@ -260,6 +301,8 @@ class GameOverScene(Scene):
             pygame.draw.line(overlay, color, (0, h - 1 - i), (w, h - 1 - i))
         surface.blit(overlay, (0, 0))
 
+    # رسم عنوان پایان بازی با بزرگ‌شدن تدریجی، محوشدن و جلوه‌ی درخشش.
+    # Renders the Game Over title with gradual scaling, fading, and a glow effect.
     def _draw_title(self, surface: pygame.Surface) -> None:
         t = self._t_title
         e = 1.0 - (1.0 - t) ** 3
@@ -279,6 +322,8 @@ class GameOverScene(Scene):
 
         rect = img_scaled.get_rect(center=(cx, cy))
 
+        # ایجاد چند لایه‌ی درخشش پیرامون عنوان با ترکیب افزایشی رنگ‌ها.
+        # Creates multiple glow layers around the title using additive color blending.
         if alpha > 0.15:
             for layer in range(4, 0, -1):
                 glow = pygame.transform.smoothscale(
@@ -294,6 +339,8 @@ class GameOverScene(Scene):
 
         surface.blit(img_scaled, rect)
 
+        # نمایش پیام رکورد جدید با تغییر اندازه‌ی ضربانی و جلوه‌ی درخشش طلایی.
+        # Displays the new high score message with a pulsing scale and golden glow effect.
         if self.is_new_high and alpha > 0.5:
             pulse = 1.0 + 0.08 * math.sin(self._t * 5.0)
             sub_img = self.font_sub.render("<< NEW HIGH SCORE >>", True, S.Palette.YELLOW)
@@ -314,6 +361,8 @@ class GameOverScene(Scene):
                 )
             surface.blit(sub_scaled, sub_rect)
 
+        # نمایش رتبه‌ی بازیکن در جدول امتیازات، در صورت قرارگرفتن میان ده رتبه‌ی برتر.
+        # Displays the player's leaderboard rank when it falls within the top ten positions.
         if alpha > 0.5 and 1 <= self.rank <= 10:
             rank_y = cy + 105
             rank_color = (255, 210, 60) if self.rank == 1 else S.Palette.HUD_ACCENT
@@ -323,6 +372,8 @@ class GameOverScene(Scene):
                 rank_img.set_alpha(int(255 * alpha))
             surface.blit(rank_img, rank_img.get_rect(center=(cx, rank_y)))
 
+    # رسم پنل آمار نهایی همراه با نمایش تدریجی امتیاز، موج و بهترین رکورد.
+    # Renders the final statistics panel with a gradual reveal of the score, wave, and best score.
     def _draw_stats(self, surface: pygame.Surface) -> None:
         if self._t_stats < 0.01:
             return
@@ -331,6 +382,8 @@ class GameOverScene(Scene):
         cx = S.Window.WIDTH // 2
         y0 = 260
 
+        # تعیین مقادیر و رنگ اختصاصی هر ردیف از آمار.
+        # Defines the values and individual colors for each statistics row.
         rows = [
             ("FINAL SCORE", f"{self.score:,}",
              S.Palette.YELLOW if self.is_new_high else S.Palette.WHITE),
@@ -338,6 +391,8 @@ class GameOverScene(Scene):
             ("BEST SCORE", f"{self.high_score:,}", S.Palette.HUD_ACCENT),
         ]
 
+        # ساخت پنل نیمه‌شفاف و قاب دور آن متناسب با میزان پیشرفت انیمیشن.
+        # Creates a translucent panel and its border according to the animation progress.
         row_h = 58
         panel_w = 480
         panel_h = row_h * len(rows) + 40
@@ -350,6 +405,8 @@ class GameOverScene(Scene):
         )
         surface.blit(panel, panel_rect.topleft)
 
+        # رسم برچسب و مقدار هر ردیف با تنظیم شفافیت و تراز عمودی.
+        # Draws each row's label and value while adjusting transparency and vertical alignment.
         for i, (label, value, color) in enumerate(rows):
             ry = y0 + 30 + i * row_h
 
@@ -366,6 +423,8 @@ class GameOverScene(Scene):
             vrect.centery = ry + lbl_img.get_height() // 2
             surface.blit(val_img, vrect)
 
+    # رسم دکمه‌ها روی سطح موقت برای اعمال محوشدن تدریجی گروهی.
+    # Draws buttons onto a temporary surface to apply a group fade-in effect.
     def _draw_buttons(self, surface: pygame.Surface) -> None:
         alpha = self._t_buttons
 
@@ -379,6 +438,8 @@ class GameOverScene(Scene):
             for b in self.buttons:
                 b.draw(surface, self.font_btn)
 
+    # نمایش راهنمای کنترل صفحه و تعداد کل بازی‌های انجام‌شده.
+    # Displays the scene control hints and the total number of games played.
     def _draw_footer(self, surface: pygame.Surface) -> None:
         hint = "UP/DOWN  select    |    ENTER  confirm    |    ESC  menu"
         img = self.font_small.render(hint, True, S.Palette.GREY)
@@ -393,6 +454,8 @@ class GameOverScene(Scene):
             grect.bottomright = (S.Window.WIDTH - 12, S.Window.HEIGHT - 10)
             surface.blit(games_img, grect)
 
+    # رسم ذرات جشن با محاسبه‌ی محوشدن، کوچک‌شدن و چرخش تدریجی هر ذره.
+    # Renders celebration particles by calculating their fading, shrinking, and gradual rotation.
     def _draw_celebration(self, surface: pygame.Surface) -> None:
         for p in self.celebration:
             t = 1.0 - (p.life / p.max_life)
@@ -402,6 +465,9 @@ class GameOverScene(Scene):
             size = max(1, int(p.size * (1.0 - t * 0.5)))
             ang = math.radians(p.angle)
             cs, sn = math.cos(ang), math.sin(ang)
+
+            # محاسبه‌ی مختصات چهار رأس ذره با استفاده از تبدیل چرخشی.
+            # Calculates the four particle vertices using a rotational transformation.
             pts = [
                 (p.x + cs * -size - sn * -size, p.y + sn * -size + cs * -size),
                 (p.x + cs * size - sn * -size,  p.y + sn * size + cs * -size),
@@ -416,6 +482,8 @@ class GameOverScene(Scene):
                 special_flags=pygame.BLEND_RGBA_ADD,
             )
 
+    # ایجاد مجموعه‌ای از ذرات با جهت، سرعت، طول عمر، رنگ و چرخش تصادفی.
+    # Spawns a group of particles with randomized direction, speed, lifetime, color, and rotation.
     def _spawn_celebration_burst(
         self,
         count: int = 26,
@@ -430,6 +498,8 @@ class GameOverScene(Scene):
             origin_x = cx + side * random.uniform(40, 240)
             origin_y = cy + random.uniform(-30, 30)
 
+            # تعیین جهت حرکت با زاویه‌ی تصادفی و تبدیل آن به مؤلفه‌های سرعت.
+            # Determines a random movement direction and converts it into velocity components.
             angle = random.uniform(0, math.tau)
             speed = random.uniform(80, 240) * (0.6 if small else 1.0)
             life = random.uniform(0.9, 1.8)
@@ -452,10 +522,9 @@ class GameOverScene(Scene):
                 angle_speed=random.uniform(-360, 360),
             ))
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  اکشن‌ها
-    # ─────────────────────────────────────────────────────────────────────
 
+    # اجرای عملیات مربوط به دکمه‌های اصلی و پخش صداهای رابط کاربری.
+    # Executes the main button actions and plays the corresponding user interface sounds.
     def _play_again(self) -> None:
         self._play_ui("ui_confirm")
         self.go_to(S.SceneName.GAMEPLAY.value)
@@ -468,6 +537,8 @@ class GameOverScene(Scene):
         self._play_ui("ui_cancel")
         self.quit_game()
 
+    # پخش صدای رابط کاربری در صورت در دسترس بودن سیستم صوتی.
+    # Plays a user interface sound when the audio system is available.
     def _play_ui(self, sound: str) -> None:
         if self.audio:
             try:

@@ -1,4 +1,8 @@
+
 """
+entities/enemies/boss_dreadnought.py
+===========================
+
 IRON DREADNOUGHT — ناوچه‌ی جنگی سنگین (نسخه‌ی افسانه‌ای).
 """
 from __future__ import annotations
@@ -12,6 +16,8 @@ from entities.enemies.boss_base import BossBase, draw_poly_alpha, draw_line_alph
 class IronDreadnought(BossBase):
     """IRON DREADNOUGHT — ناوچه‌ی جنگی سنگین."""
 
+    # مشخصات پایه و زمان‌بندی حملات ناوچه
+    # Core attributes and attack intervals of the dreadnought
     HP = 90
     RADIUS = 85
     BODY_COLOR = (230, 80, 50)
@@ -22,7 +28,8 @@ class IronDreadnought(BossBase):
 
     def __init__(self, x, y, scene=None, *, target_y=None):
         super().__init__(x, y, scene=scene, target_y=target_y)
-        # انیمیشن‌های اضافی
+        # وضعیت انیمیشن حلقه‌ی راکتور، پس‌زنی توپ‌ها و ضربان چشم‌ها
+        # Animation state for the reactor ring, cannon recoil, and eye pulses
         self._ring_rot = 0.0
         self._cannon_recoil = [0.0, 0.0]
         self._eye_pulse = 0.0
@@ -36,6 +43,8 @@ class IronDreadnought(BossBase):
                 self._cannon_recoil[i] = max(0.0, self._cannon_recoil[i] - dt * 4)
 
     # ─── حمله‌ها ───
+    # انتخاب و اجرای یکی از الگوهای حمله‌ی ناوچه
+    # Selects and executes one of the dreadnought's attack patterns
     def _pick_and_execute_attack(self):
         try:
             name = random.choice(["shotgun", "barrage", "missiles"])
@@ -52,6 +61,8 @@ class IronDreadnought(BossBase):
         finally:
             self._attack_timer = self._get_attack_interval()
 
+    # شلیک چند گلوله با زاویه‌های متفاوت به سمت بازیکن
+    # Fires multiple projectiles at different angles toward the player
     def _attack_shotgun(self):
         if self.scene is None:
             return
@@ -79,6 +90,8 @@ class IronDreadnought(BossBase):
         except Exception:
             pass
 
+    # شلیک رگباری با چند گلوله در زوایای نزدیک به هدف
+    # Fires a burst of projectiles along angles close to the target direction
     def _attack_barrage(self):
         if self.scene is None:
             return
@@ -102,6 +115,8 @@ class IronDreadnought(BossBase):
         except Exception:
             pass
 
+    # پرتاب دو موشک هدایت‌شونده از دو سمت بدنه
+    # Launches two homing missiles from opposite sides of the hull
     def _attack_missiles(self):
         if self.scene is None:
             return
@@ -122,10 +137,8 @@ class IronDreadnought(BossBase):
         except Exception:
             pass
 
-    # ═════════════════════════════════════════════════════════════════════
-    #  رسم — Battlecruiser افسانه‌ای
-    # ═════════════════════════════════════════════════════════════════════
-
+    # رسم بدنه و جزئیات ظاهری ناوچه‌ی جنگی
+    # Renders the dreadnought's hull and visual details
     def draw_body(self, surface: pygame.Surface, alpha: int = 255) -> None:
         r = int(self.radius * 1.35)
         cx, cy = int(self.x), int(self.y)
@@ -137,6 +150,8 @@ class IronDreadnought(BossBase):
         yellow = (255, 210, 60)
 
         # ---- ۱. سایه‌ی غول‌پیکر زیر ----
+        # سایه‌ی بیضی‌شکل برای ایجاد عمق زیر بدنه
+        # Elliptical shadow that adds depth beneath the hull
         sw, sh = int(r * 1.7), int(r * 0.5)
         shadow = pygame.Surface((sw * 2, sh * 2), pygame.SRCALPHA)
         for rr in range(sh, 0, -1):
@@ -147,6 +162,8 @@ class IronDreadnought(BossBase):
         surface.blit(shadow, (cx - sw, cy + int(r * 0.6) - sh))
 
         # ---- ۲. هاله‌ی قرمز پشت (epic) ----
+        # هاله‌ی قرمز چندلایه در پشت بدنه
+        # Multi-layered red aura rendered behind the hull
         aura_r = int(r * 1.4)
         aura = pygame.Surface((aura_r * 2, aura_r * 2), pygame.SRCALPHA)
         for rr in range(aura_r, 0, -6):
@@ -157,6 +174,8 @@ class IronDreadnought(BossBase):
                      special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۳. بال‌های زره‌ای غول‌پیکر (لایه‌ی پشتی) ----
+        # ترسیم بال‌های زرهی و جزئیات هشدار و ناوبری آن‌ها
+        # Draws the armored wings with their warning and navigation details
         for sign in (-1, 1):
             # لایه‌ی زیر (تیره‌تر، بزرگ‌تر)
             wing_back = [
@@ -204,6 +223,8 @@ class IronDreadnought(BossBase):
                 pygame.draw.circle(surface, color, (tip_x, tip_y), 4)
 
         # ---- ۴. بدنه‌ی اصلی (هشت‌ضلعی زره‌ای) ----
+        # ساخت بدنه‌ی چندضلعی با لایه‌های رنگی و خطوط تزئینی
+        # Builds the polygonal hull with layered colors and decorative lines
         rot = self._rotation * 0.08
         hull = []
         for i in range(8):
@@ -238,6 +259,8 @@ class IronDreadnought(BossBase):
             draw_line_alpha(surface, (*bright, 200), (x1, y1), (x2, y2), 2)
 
         # ---- ۵. پیچ‌ها روی رأس‌های بدنه ----
+        # جزئیات فلزی روی گوشه‌های بدنه
+        # Metallic details placed at the hull vertices
         for i in range(8):
             angle = rot + i * math.tau / 8 - math.pi / 8
             bx = cx + math.cos(angle) * r * 0.78
@@ -247,6 +270,8 @@ class IronDreadnought(BossBase):
             pygame.draw.circle(surface, (255, 200, 100), (int(bx), int(by)), 1)
 
         # ---- ۶. حلقه‌ی چرخان بیرونی راکتور ----
+        # حلقه‌ی چرخان با نقاط نورانی و هاله‌های متغیر
+        # Rotating ring with glowing points and animated halos
         ring_r = int(r * 0.52)
         for i in range(8):
             a = self._ring_rot + i * math.tau / 8
@@ -266,6 +291,8 @@ class IronDreadnought(BossBase):
                          special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۷. هسته‌ی راکتور درخشان ----
+        # هسته‌ی مرکزی با نور قرمز و چند لایه‌ی درخشان
+        # Central reactor core with a red glow and multiple luminous layers
         pulse = 0.7 + 0.3 * math.sin(self._t * 7)
         core_r = int(r * 0.22 * pulse)
 
@@ -284,6 +311,8 @@ class IronDreadnought(BossBase):
         pygame.draw.circle(surface, (255, 240, 200), (cx, cy), max(2, core_r - 2))
 
         # ---- ۸. دو چشم قرمز (کنار هسته) ----
+        # چشم‌های جانبی با ضربان نوری هماهنگ
+        # Side eyes with synchronized pulsing light
         for sign in (-1, 1):
             ex = cx + sign * int(r * 0.38)
             ey = cy - int(r * 0.08)
@@ -305,6 +334,8 @@ class IronDreadnought(BossBase):
             pygame.draw.circle(surface, (255, 255, 255), (ex - 1, ey - 1), max(1, eye_r // 4))
 
         # ---- ۹. دو توپ سنگین (جلو) ----
+        # توپ‌های جلویی با قابلیت نمایش پس‌زنی هنگام شلیک
+        # Front cannons with recoil animation during firing
         for i, sign in enumerate((-1, 1)):
             recoil = self._cannon_recoil[i]
             tx = cx + sign * int(r * 0.55)
@@ -347,6 +378,8 @@ class IronDreadnought(BossBase):
             pygame.draw.circle(surface, (255, 240, 180), (tx, tip_y), max(2, tip_r // 2))
 
         # ---- ۱۰. تهویه‌های اگزوز (بالا) ----
+        # دریچه‌های خروجی با جزئیات فلزی و افکت دود متحرک
+        # Exhaust vents with metallic details and animated smoke effects
         for sign in (-1, 1):
             vx = cx + sign * int(r * 0.42)
             vy = cy - int(r * 0.65)
@@ -373,6 +406,8 @@ class IronDreadnought(BossBase):
                              special_flags=pygame.BLEND_RGBA_ADD)
             
 
+    # محدوده‌های برخورد جداگانه برای بدنه‌ی مرکزی و دو بال ناوچه
+    # Separate collision circles for the central hull and both wings
     def get_hitcircles(self):
         """
         چند hitbox برای پوشش بال‌های پهن.

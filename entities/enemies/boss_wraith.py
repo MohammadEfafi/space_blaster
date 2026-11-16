@@ -1,4 +1,7 @@
 """
+entities/enemies/boss_wraith.py
+===========================
+
 PLASMA WRAITH — شبح پلاسما (نسخه‌ی افسانه‌ای).
 """
 from __future__ import annotations
@@ -27,6 +30,8 @@ class PlasmaWraith(BossBase):
 
     def __init__(self, x, y, scene=None, *, target_y=None):
         super().__init__(x, y, scene=scene, target_y=target_y)
+        # وضعیت و میزان پیشرفت هر مرحله‌ی تلپورت و شفافیت بدنه نگهداری می‌شود.
+        # The teleport state, progress of each phase, and body opacity are tracked.
         self._tp_state = "idle"
         self._tp_progress = 0.0
         self._tp_target_x = 0.0
@@ -40,14 +45,14 @@ class PlasmaWraith(BossBase):
         self._eye_blink_timer = 0.0
         self._eye_blinking = False
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  به‌روزرسانی
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def update_ai(self, dt: float) -> None:
         super().update_ai(dt)
 
         # ---- تلپورت ----
+        # تلپورت در سه مرحله‌ی هشدار، محو شدن و ظاهر شدن اجرا می‌شود.
+        # Teleporting runs through three phases: warning, disappearance, and reappearance.
         if self._tp_state == "warn":
             self._tp_progress += dt / self.TELEPORT_WARN_TIME
             if self._tp_progress >= 1.0:
@@ -57,6 +62,8 @@ class PlasmaWraith(BossBase):
             self._tp_progress += dt / self.TELEPORT_OUT_TIME
             self._tp_alpha = max(0.0, 1.0 - self._tp_progress)
             if self._tp_progress >= 1.0:
+                # پس از محو شدن کامل، مختصات پایه به مقصد جدید منتقل می‌شود.
+                # Once fully faded out, the base position is moved to the new destination.
                 self._base_x = self._tp_target_x
                 self._sway_phase = 0.0
                 self.x = self._base_x
@@ -71,6 +78,8 @@ class PlasmaWraith(BossBase):
                 self._tp_alpha = 1.0
 
         # ---- چشمک چشم‌ها ----
+        # زمان چشمک به‌صورت تصادفی تعیین می‌شود و مدت بسته ماندن چشم‌ها کوتاه است.
+        # Blink intervals are randomized, while the eyes remain closed only briefly.
         self._eye_blink_timer += dt
         if not self._eye_blinking and self._eye_blink_timer > random.uniform(2, 4):
             self._eye_blinking = True
@@ -79,11 +88,11 @@ class PlasmaWraith(BossBase):
             self._eye_blinking = False
             self._eye_blink_timer = 0.0
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  حمله‌ها
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def _pick_and_execute_attack(self):
+        # هنگام اجرای تلپورت، انتخاب حمله‌ی جدید به تعویق می‌افتد.
+        # Starting a new attack is postponed while teleporting is in progress.
         if self._tp_state != "idle":
             self._attack_timer = 0.5
             return
@@ -106,9 +115,13 @@ class PlasmaWraith(BossBase):
         player = getattr(self.scene, "player", None)
         if player is None:
             return
+        # جهت پرتو با بردار موقعیت بازیکن نسبت به باس تعیین و نرمال‌سازی می‌شود.
+        # The beam direction is determined and normalized from the player's position relative to the boss.
         dx, dy = player.x - self.x, player.y - self.y
         d = math.hypot(dx, dy) or 1.0
         ux, uy = dx / d, dy / d
+        # هشت گلوله با فاصله‌ی ثابت روی مسیر پرتو ایجاد می‌شوند.
+        # Eight bullets are spawned at fixed intervals along the beam path.
         for i in range(8):
             try:
                 self.scene.spawn_bullet(Bullet(
@@ -128,6 +141,8 @@ class PlasmaWraith(BossBase):
         if self.scene is None:
             return
         n = 16
+        # گلوله‌ها با فاصله‌ی زاویه‌ای یکسان، یک الگوی انفجاری دایره‌ای می‌سازند.
+        # Bullets are evenly spaced by angle to form a circular burst pattern.
         for i in range(n):
             angle = (i / n) * math.tau + self._rotation
             try:
@@ -148,6 +163,8 @@ class PlasmaWraith(BossBase):
         if self.scene is None:
             return
         w = S.Window.WIDTH
+        # مقصد تلپورت به‌صورت تصادفی در محدوده‌ی افقی امن صفحه انتخاب می‌شود.
+        # The teleport destination is randomized within the screen's safe horizontal range.
         self._tp_target_x = random.uniform(w * 0.15, w * 0.85)
         self._tp_state = "warn"
         self._tp_progress = 0.0
@@ -157,6 +174,8 @@ class PlasmaWraith(BossBase):
             self.scene.audio.play("powerup_spawn")
         except Exception:
             pass
+        # حلقه‌ای از ذرات در محل فعلی باس، آغاز تلپورت را نمایش می‌دهد.
+        # A particle ring at the boss's current position signals the start of teleporting.
         try:
             from systems.particles import ParticleKind
             self.scene.particles.emit_ring(
@@ -167,11 +186,11 @@ class PlasmaWraith(BossBase):
         except Exception:
             pass
 
-    # ═════════════════════════════════════════════════════════════════════
-    #  رسم — Wraith افسانه‌ای
-    # ═════════════════════════════════════════════════════════════════════
+
 
     def draw_body(self, surface: pygame.Surface, alpha: int = 255) -> None:
+        # هنگام محو شدن یا ظاهر شدن، شفافیت بدنه از پیشرفت تلپورت گرفته می‌شود.
+        # During disappearance or reappearance, body opacity is derived from teleport progress.
         if self._tp_state in ("out", "in"):
             a = self._tp_alpha
             if a <= 0.01:
@@ -187,6 +206,8 @@ class PlasmaWraith(BossBase):
         bright = self._lighter(base, 80)
         white = (240, 255, 255)
 
+        # در حالت هشدار، رنگ بدنه به‌صورت ضربانی به سمت قرمز تغییر می‌کند.
+        # During the warning state, the body color pulses toward red.
         is_warning = self._tp_state == "warn"
         if is_warning:
             flicker = 0.5 + 0.5 * math.sin(self._t * 30)
@@ -198,6 +219,8 @@ class PlasmaWraith(BossBase):
             bright = (255, 180, 180)
 
         # ---- ۱. هاله‌ی غول‌پیکر ----
+        # با کاهش شعاع حلقه‌ها، شفافیت آن‌ها بیشتر می‌شود تا هاله‌ای نرم شکل بگیرد.
+        # Ring opacity increases as their radius decreases, creating a smooth aura.
         aura_r = int(r * 2.0)
         aura = pygame.Surface((aura_r * 2, aura_r * 2), pygame.SRCALPHA)
         for rr in range(aura_r, 0, -5):
@@ -209,6 +232,8 @@ class PlasmaWraith(BossBase):
                      special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۲. ذرات شناور دور بدنه ----
+        # هر ذره با فاز و شعاع مستقل روی مسیری بیضوی پیرامون باس حرکت می‌کند.
+        # Each particle moves along an elliptical path around the boss using its own phase and radius.
         for i in range(8):
             phase = self._wisp_phases[i] + self._t * 0.8
             wr = r * self._wisp_radius[i]
@@ -226,6 +251,8 @@ class PlasmaWraith(BossBase):
                              special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۳. شش شاخک (پشت، بلند، موج‌دار) ----
+        # شاخک‌ها پشت بدنه رسم می‌شوند و طول آن‌ها به‌صورت یکی‌درمیان تغییر می‌کند.
+        # The tentacles are drawn behind the body, with alternating lengths.
         for i in range(6):
             base_angle = (i / 6) * math.tau + math.pi / 2
             phase = self._tentacle_phases[i] + self._t * 2.5
@@ -234,6 +261,8 @@ class PlasmaWraith(BossBase):
             max_len = r * (1.6 + (i % 2) * 0.5)
 
             # نقاط شاخک (zigzag)
+            # نقاط مسیر با ترکیب جهت اصلی و جابه‌جایی عمود بر آن ساخته می‌شوند.
+            # Path points combine the main direction with perpendicular displacement.
             pts = []
             segs = 10
             for seg in range(segs + 1):
@@ -248,6 +277,8 @@ class PlasmaWraith(BossBase):
                 pts.append((px, py))
 
             # رسم با آلفا (ضخامت کاهشی)
+            # با نزدیک شدن به نوک شاخک، ضخامت و شفافیت خطوط کاهش پیدا می‌کند.
+            # Line thickness and opacity decrease toward the tentacle tip.
             for j in range(len(pts) - 1):
                 t = j / (len(pts) - 1)
                 width = max(1, int(5 * (1 - t * 0.7)))
@@ -257,6 +288,8 @@ class PlasmaWraith(BossBase):
                 draw_line_alpha(surface, (*bright, aa), pts[j], pts[j + 1], width)
 
             # هاله‌ی نوک شاخک
+            # درخشش انتهایی شاخک فقط زمانی رسم می‌شود که بدنه به‌اندازه‌ی کافی قابل مشاهده باشد.
+            # The tentacle tip glow is drawn only when the body is sufficiently visible.
             if a > 0.3:
                 tip_x, tip_y = pts[-1]
                 for rr in range(8, 0, -2):
@@ -268,6 +301,8 @@ class PlasmaWraith(BossBase):
                                      special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۴. بدنه‌ی شبح چندلایه ----
+        # چندضلعی‌های چرخان با اندازه‌های متفاوت، ساختار چندلایه‌ی بدنه را ایجاد می‌کنند.
+        # Rotating polygons of different sizes create the body's layered structure.
         rot = self._rotation * 0.2
 
         # لایه‌ی بیرونی (خارج، موج‌دار)
@@ -303,10 +338,14 @@ class PlasmaWraith(BossBase):
         draw_poly_alpha(surface, inner_pts, (*self._lighter(base, 20), int(200 * a)))
 
         # خطوط نئونی
+        # خطوط روشن روی مرز چندضلعی‌ها، لبه‌های هر لایه را برجسته می‌کنند.
+        # Bright outlines along the polygons emphasize the edges of each layer.
         draw_poly_alpha(surface, outer_pts, (*bright, int(230 * a)), width=2)
         draw_poly_alpha(surface, mid_pts, (*bright, int(180 * a)), width=1)
 
         # ---- ۵. ۵ چشم در قوس ----
+        # هنگام چشمک زدن، رسم هر پنج چشم موقتاً متوقف می‌شود.
+        # All five eyes are temporarily hidden while the boss is blinking.
         if not self._eye_blinking:
             for i in range(5):
                 # موقعیت در قوس بالا
@@ -316,6 +355,8 @@ class PlasmaWraith(BossBase):
                 eye_r = max(2, int(r * 0.08))
 
                 # هاله‌ی چشم
+                # هاله با چند دایره‌ی نیمه‌شفاف ساخته می‌شود تا درخشش تدریجی داشته باشد.
+                # The glow is built from translucent circles to produce a gradual light effect.
                 for rr in range(eye_r * 5, 0, -1):
                     aa = int(180 * (1 - rr / (eye_r * 5)) * a)
                     if aa <= 0:
@@ -335,6 +376,8 @@ class PlasmaWraith(BossBase):
                                        (ex, ey), max(1, int(eye_r * 0.5 * a)))
 
         # ---- ۶. هسته‌ی مرکزی غول‌پیکر ----
+        # شدت روشنایی هسته با تابع سینوسی تغییر می‌کند تا حالت تپش ایجاد شود.
+        # The core brightness changes sinusoidally to create a pulsing effect.
         pulse = 0.7 + 0.3 * math.sin(self._t * 6)
         core_r = int(r * 0.30 * pulse)
 
@@ -349,6 +392,8 @@ class PlasmaWraith(BossBase):
                              special_flags=pygame.BLEND_RGBA_ADD)
 
         # هسته (سه لایه)
+        # سه دایره‌ی تو‌در‌تو، از رنگ تیره‌تر تا روشن‌ترین نقطه‌ی مرکزی رسم می‌شوند.
+        # Three nested circles are drawn from the darker outer layer to the brightest center.
         if a > 0.1:
             pygame.draw.circle(surface, (100, 220, 255),
                                (cx, cy), max(1, int(core_r * 1.2 * a)))
@@ -358,6 +403,8 @@ class PlasmaWraith(BossBase):
                                (cx, cy), max(1, int(core_r * 0.5 * a)))
 
         # ---- ۷. حلقه‌های چرخان دور هسته ----
+        # دو حلقه با جهت و سرعت چرخش متفاوت، ذرات نورانی را پیرامون هسته حرکت می‌دهند.
+        # Two rings with different rotation directions and speeds move glowing particles around the core.
         if a > 0.3:
             for ring_idx, (ring_r_ratio, speed, col) in enumerate([
                 (0.5, 1.5, (100, 220, 255)),
@@ -380,6 +427,8 @@ class PlasmaWraith(BossBase):
                                  special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۸. نشانگر مقصد تلپورت ----
+        # مقصد آینده‌ی باس با حلقه‌ی هشدار و خطی زیگزاگ از موقعیت فعلی مشخص می‌شود.
+        # The boss's next position is indicated by a warning ring and a zigzag line from its current location.
         if self._tp_state == "warn" and self.scene is not None:
             target_x = self._tp_target_x
             target_y = self.ENTRY_Y
@@ -393,6 +442,8 @@ class PlasmaWraith(BossBase):
                                  special_flags=pygame.BLEND_RGBA_ADD)
 
             # خط زیگزاگ از باس به مقصد
+            # نقاط میانی مسیر به‌صورت تصادفی جابه‌جا می‌شوند تا خط ظاهری نامنظم داشته باشد.
+            # Intermediate points are randomly displaced to give the line an irregular appearance.
             line_alpha = int(120 * self._tp_progress)
             if line_alpha > 0:
                 prev_x, prev_y = cx, cy
@@ -407,9 +458,11 @@ class PlasmaWraith(BossBase):
                     draw_line_alpha(surface, (255, 120, 120, line_alpha),
                                     (prev_x, prev_y), (bx, by), 2)
                     prev_x, prev_y = bx, by
-            
+
     def get_hitcircles(self):
         """یک hitbox بزرگ‌تر که با بدن شبح هماهنگه."""
+        # شعاع برخورد با ضریب ۱٫۳ محاسبه می‌شود تا محدوده‌ی برخورد از بدنه‌ی اصلی بزرگ‌تر باشد.
+        # The collision radius is scaled by 1.3, making it larger than the main body.
         r = self.radius
         return [
             (self.x, self.y, r * 1.3),
