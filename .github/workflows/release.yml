@@ -26,7 +26,7 @@ jobs:
           pip install pyinstaller
 
       - run: |
-          pyinstaller --onefile --windowed --name SpaceBlaster --icon=icon.ico --add-data "data;data" main.py
+          pyinstaller --onefile --windowed --name SpaceBlaster --icon=icon.ico main.py
 
       - uses: softprops/action-gh-release@v2
         with:
