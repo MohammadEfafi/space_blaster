@@ -21,8 +21,8 @@
 
 <br>
 
-<a href="https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">
-  <img src="https://img.shields.io/badge/CLICK_HERE_TO_DOWNLOAD-15_MB-00C853?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" height="55">
+<a href="https://mohammad-efafi.itch.io/space-blaster">
+  <img src="https://img.shields.io/badge/PLAY_ON_ITCH.IO-15_MB-00C853?style=for-the-badge&logo=itch.io&logoColor=white" alt="Play on itch.io" height="55">
 </a>
 
 <br><br>
@@ -36,11 +36,11 @@
 <br>
 
 <sub>
-If the main link doesn't work (network/region issues), use these mirrors:
+If itch.io is blocked in your region, use these direct mirrors:
 <br>
-<a href="https://gh-proxy.com/https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">Mirror 1 (gh-proxy)</a>
+<a href="https://gh-proxy.com/https://github.com/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">Direct Download 1 (gh-proxy)</a>
 &nbsp;·&nbsp;
-<a href="https://xget.xi-xu.me/gh/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">Mirror 2 (xget)</a>
+<a href="https://xget.xi-xu.me/gh/MohammadEfafi/space_blaster/releases/latest/download/SpaceBlaster.exe">Direct Download 2 (xget)</a>
 </sub>
 
 <br>
