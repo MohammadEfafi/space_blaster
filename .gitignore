@@ -1,23 +1,16 @@
-# ═══════════════════════════════════════════════════════════════════════════
-#  SPACE BLASTER — .gitignore
-# ═══════════════════════════════════════════════════════════════════════════
-
-
-# ─────────────────────────────────────────────────────────────────────────
-#   Python — compiled files
-# ─────────────────────────────────────────────────────────────────────────
+# فایل‌های کش و بایت‌کد پایتون
+# Python cache and compiled bytecode files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Bytecode files
+# انواع فایل‌های بایت‌کد پایتون
+# Python bytecode file formats
 *.pyc
 *.pyo
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    Virtual Environments
-# ─────────────────────────────────────────────────────────────────────────
+# محیط‌های مجازی و تنظیمات نسخه پایتون
+# Virtual environments and Python version configuration
 .venv/
 venv/
 env/
@@ -25,10 +18,8 @@ ENV/
 .conda/
 .python-version
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    Packaging & Distribution
-# ─────────────────────────────────────────────────────────────────────────
+# فایل‌ها و پوشه‌های تولیدشده هنگام ساخت و بسته‌بندی پروژه
+# Files and directories generated during building and packaging
 build/
 dist/
 *.egg-info/
@@ -39,20 +30,16 @@ pip-wheel-metadata/
 MANIFEST
 *.manifest
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    PyInstaller — exe outputs
-# ─────────────────────────────────────────────────────────────────────────
+# فایل‌های تنظیمات و خروجی بسته‌بندی اجرایی
+# Executable packaging configuration and output files
 *.spec
 *.exe
 *.app
 *.dmg
 *.msi
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    Test & Lint caches
-# ─────────────────────────────────────────────────────────────────────────
+# کش ابزارهای تست، بررسی کد و پوشش تست
+# Caches and generated files from testing, linting, and coverage tools
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -63,46 +50,43 @@ htmlcov/
 *.cover
 .hypothesis/
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    IDEs & Editors
-# ─────────────────────────────────────────────────────────────────────────
-
-# VS Code
+# تنظیمات محیط توسعه VS Code
+# VS Code workspace settings
 .vscode/
 !.vscode/settings.json
 !.vscode/extensions.json
 
-# PyCharm / IntelliJ
+# تنظیمات محیط‌های توسعه PyCharm و IntelliJ
+# PyCharm and IntelliJ workspace settings
 .idea/
 *.iml
 
-# Sublime Text
+# فایل‌های پروژه و تنظیمات ویرایشگر Sublime Text
+# Sublime Text project and workspace files
 *.sublime-project
 *.sublime-workspace
 
-# Vim
+# فایل‌های موقت و پشتیبان ویرایشگر Vim
+# Vim temporary and backup files
 *.swp
 *.swo
 *~
 
-# Emacs
+# فایل‌های موقت و پیکربندی ویرایشگر Emacs
+# Emacs temporary and configuration files
 *~
 \#*\#
 .\#*
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    OS files
-# ─────────────────────────────────────────────────────────────────────────
-
-# Windows
+# فایل‌های سیستمی و مخفی ویندوز
+# Windows system and hidden files
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
 Desktop.ini
 
-# macOS
+# فایل‌های سیستمی macOS
+# macOS system files
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -110,33 +94,26 @@ Desktop.ini
 .Spotlight-V100
 .Trashes
 
-# Linux
+# فایل‌ها و تنظیمات سیستمی Linux
+# Linux system and configuration files
 .directory
 *~
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    Project — local user data
-# ─────────────────────────────────────────────────────────────────────────
-# saves/ contains highscore.json — must not be pushed,
-# but the folder itself should exist (hence .gitkeep)
+# فایل‌های ذخیره‌سازی محلی؛ فقط فایل نگهدارنده پوشه در Git باقی می‌ماند
+# Local save files; only the directory placeholder is tracked by Git
 saves/*
 !saves/.gitkeep
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    Logs & temp files
-# ─────────────────────────────────────────────────────────────────────────
+# فایل‌های گزارش، موقت و کش برنامه
+# Application log, temporary, and cache files
 *.log
 logs/
 *.tmp
 *.temp
 .cache/
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    Environment variables & secrets
-# ─────────────────────────────────────────────────────────────────────────
+# فایل‌های حاوی متغیرهای محیطی، کلیدها و اطلاعات محرمانه
+# Environment variable files, keys, and sensitive credentials
 .env
 .env.local
 .env.*.local
@@ -144,20 +121,16 @@ logs/
 *.pem
 secrets.json
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#    Archives (backups)
-# ─────────────────────────────────────────────────────────────────────────
+# فایل‌های آرشیو و فشرده‌سازی
+# Archive and compressed files
 *.zip
 *.tar
 *.tar.gz
 *.rar
 *.7z
 
-
-# ─────────────────────────────────────────────────────────────────────────
-#   System temp / backup files
-# ─────────────────────────────────────────────────────────────────────────
+# فایل‌های پشتیبان و باقی‌مانده از عملیات ویرایش و اعمال تغییرات
+# Backup files and temporary files left by editing or patch operations
 *.bak
 *.backup
 *.orig

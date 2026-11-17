@@ -38,14 +38,12 @@ from entities.player.registry import (
 from scenes.base import Scene
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  چیدمان — نسبت به W و H
-# ═══════════════════════════════════════════════════════════════════════════
-
 W = S.Window.WIDTH
 H = S.Window.HEIGHT
 
 # نسبت‌های کلیدی صفحه
+# موقعیت اجزای رابط کاربری از ابعاد پنجره محاسبه می‌شود تا چیدمان با رزولوشن سازگار بماند.
+# UI element positions are calculated from the window dimensions to keep the layout resolution-independent.
 TITLE_Y      = int(H * 0.10)             # ۶۵ از ۶۵۰
 DIVIDER_Y    = int(H * 0.16)             # ۱۰۴
 
@@ -75,14 +73,14 @@ BTN_GAP      = 70
 HINT_Y       = H - 20
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  کمکی‌ها
-# ═══════════════════════════════════════════════════════════════════════════
-
+# درون‌یابی خطی برای حرکت تدریجی مقادیر بین دو نقطه.
+# Linear interpolation smoothly moves a value between two endpoints.
 def _lerp(a: float, b: float, t: float) -> float:
     return a + (b - a) * t
 
 
+# هر کانال رنگ به‌صورت جداگانه درون‌یابی می‌شود تا یک رنگ میانی ساخته شود.
+# Each color channel is interpolated independently to produce an intermediate color.
 def _color_lerp(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[int, int, int]:
     return (
         int(_lerp(a[0], b[0], t)),
@@ -91,13 +89,11 @@ def _color_lerp(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> t
     )
 
 
+# منحنی ease-out باعث می‌شود انیمیشن در ابتدا سریع‌تر و در انتها آرام‌تر شود.
+# The ease-out curve makes the animation start quickly and slow down toward the end.
 def _ease_out_cubic(t: float) -> float:
     return 1.0 - (1.0 - t) ** 3
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  نوار آمار
-# ═══════════════════════════════════════════════════════════════════════════
 
 class _StatBar:
     def __init__(self, label: str, value: int) -> None:
@@ -107,14 +103,20 @@ class _StatBar:
         self._flash = 0.0    # وقتی تغییر می‌کنه، فلاش کوتاه
 
     def update(self, dt: float, new_target: int) -> None:
+        # تغییر مقدار هدف، افکت فلاش کوتاه نوار را فعال می‌کند.
+        # Changing the target value triggers a brief flash effect on the bar.
         if new_target != int(self.target):
             self._flash = 1.0
         self.target = float(new_target)
+
+        # مقدار نمایشی با سرعت محدود به مقدار هدف نزدیک می‌شود.
+        # The displayed value gradually approaches the target at a frame-rate-independent rate.
         diff = self.target - self.displayed
         if abs(diff) < 0.01:
             self.displayed = self.target
         else:
             self.displayed += diff * min(1.0, dt * 8.0)
+
         if self._flash > 0:
             self._flash = max(0.0, self._flash - dt * 3.0)
 
@@ -151,17 +153,23 @@ class _StatBar:
         )
 
         # نوار پرشده با گرادیان
+        # مقدار نمایش‌داده‌شده به بازه‌ی صفر تا یک محدود می‌شود تا طول نوار از محدوده خارج نشود.
+        # The displayed value is clamped to the zero-to-one range so the fill stays within the bar.
         ratio = max(0.0, min(1.0, self.displayed / 5.0))
         filled = int(bar_w * ratio)
         if filled > 0:
             fill_surf = pygame.Surface((filled, bar_height), pygame.SRCALPHA)
+
             # گرادیان افقی: تیره‌تر در چپ، روشن‌تر در راست
+            # The horizontal gradient transitions from a darker shade on the left to a brighter one on the right.
             dark = (max(0, accent[0] - 60), max(0, accent[1] - 60), max(0, accent[2] - 60))
             for i in range(filled):
                 t = i / max(1, filled - 1)
                 c = _color_lerp(dark, accent, t)
                 pygame.draw.line(fill_surf, (*c, 255), (i, 0), (i, bar_height))
+
             # رندر با گوشه‌ی گرد
+            # A rounded mask clips the gradient to give the filled section rounded corners.
             rounded = pygame.Surface((filled, bar_height), pygame.SRCALPHA)
             pygame.draw.rect(
                 rounded, (255, 255, 255, 255),
@@ -174,10 +182,6 @@ class _StatBar:
         val_img = font.render(f"{int(round(self.displayed))}", True, accent)
         surface.blit(val_img, (bar_x + bar_w + 12, y))
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  دکمه
-# ═══════════════════════════════════════════════════════════════════════════
 
 class _Button:
     def __init__(
@@ -203,8 +207,12 @@ class _Button:
     def update(self, dt: float, mouse_pos: tuple[int, int]) -> None:
         self._t += dt
         self.hovered = self.rect.collidepoint(mouse_pos)
+
+        # مقدار hover به‌صورت تدریجی به وضعیت جدید نزدیک می‌شود.
+        # The hover amount gradually approaches its new target state.
         target = 1.0 if self.hovered else 0.0
         self._hover += (target - self._hover) * min(1.0, dt * 12.0)
+
         if self._click > 0:
             self._click = max(0.0, self._click - dt * 4.0)
 
@@ -220,6 +228,8 @@ class _Button:
         return False
 
     def draw(self, surface: pygame.Surface, font: pygame.font.Font) -> None:
+        # محدوده‌ی دکمه هنگام hover کمی بزرگ‌تر می‌شود تا حس واکنش‌پذیری ایجاد کند.
+        # The button expands slightly while hovered to create a responsive visual effect.
         pad_x = int(6 * self._hover)
         pad_y = int(3 * self._hover)
         rect = self.rect.inflate(pad_x * 2, pad_y * 2)
@@ -266,10 +276,6 @@ class _Button:
             surface.blit(flash, rect.topleft)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  صحنه
-# ═══════════════════════════════════════════════════════════════════════════
-
 class ShipSelectScene(Scene):
 
     TRANSITION_TIME = 0.22
@@ -292,11 +298,16 @@ class ShipSelectScene(Scene):
             self.current_key = DEFAULT_SHIP_KEY
 
         # ---- نمونه‌ی پیش‌نمایش ----
+        # نمونه‌ی جداگانه‌ای از هر سفینه ساخته می‌شود تا هنگام جابه‌جایی، نیازی به ساخت مجدد آن نباشد.
+        # A separate instance is created for each ship so switching previews does not require recreating it.
         self._preview_cache: dict = {}
         for key in SHIP_LIST:
             try:
                 ship = SHIP_CLASSES[key](scene=None)
                 ship.radius = ship.RADIUS * self.PREVIEW_SCALE
+
+                # وضعیت‌های وابسته به گیم‌پلی غیرفعال می‌شوند تا پیش‌نمایش بدون افکت‌های موقتی نمایش داده شود.
+                # Gameplay-related states are disabled so the preview remains free of temporary effects.
                 ship.invuln_time = 0.0
                 ship.powerup_time = 0.0
                 ship.muzzle_flash = 0.0
@@ -326,6 +337,8 @@ class ShipSelectScene(Scene):
         self._accent = info.color
 
         # ---- ذرات چرخان دور قاب ----
+        # ذرات با زاویه‌های اولیه‌ی یکنواخت روی یک حلقه توزیع می‌شوند، اما سرعت و ظاهرشان تصادفی است.
+        # Particles are evenly distributed around a ring initially, while their speeds and appearances are randomized.
         self._ring_dots: list[dict] = [
             {
                 "angle": (i / 24) * math.tau,
@@ -337,6 +350,8 @@ class ShipSelectScene(Scene):
         ]
 
         # ---- ستاره‌های پس‌زمینه ----
+        # موقعیت، سرعت و اندازه‌ی هر ستاره مستقل انتخاب می‌شود تا پس‌زمینه یکنواخت به نظر نرسد.
+        # Each star receives an independent position, speed, and size to avoid a uniform-looking background.
         self.stars = [
             [
                 random.uniform(0, W),
@@ -366,9 +381,6 @@ class ShipSelectScene(Scene):
     def on_exit(self) -> None:
         self._preview_cache.clear()
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  ورودی
-    # ─────────────────────────────────────────────────────────────────────
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
@@ -382,17 +394,23 @@ class ShipSelectScene(Scene):
                 self._go_back()
             return
 
+        # رویداد کلیک به هر دو دکمه ارسال می‌شود و پس از پردازش توسط یکی از آن‌ها متوقف می‌شود.
+        # Mouse events are passed to both buttons and stop once one of them handles the event.
         for b in (self.btn_back, self.btn_select):
             if b.handle_event(event):
                 break
 
     def _switch(self, direction: int) -> None:
+        # تا پایان انیمیشن تعویض، ورودی جدید پذیرفته نمی‌شود تا انتقال‌ها روی هم نیفتند.
+        # New input is blocked until the switching animation finishes, preventing overlapping transitions.
         if self._input_lock:
             return
         self._input_lock = True
         self._transition_dir = direction
         self._transition_t = 0.0
 
+        # جهت حرکت، سفینه‌ی بعدی یا قبلی را مشخص می‌کند.
+        # The direction determines whether the next or previous ship is selected.
         if direction > 0:
             self.current_key = next_ship_key(self.current_key)
         else:
@@ -403,9 +421,6 @@ class ShipSelectScene(Scene):
         self.btn_select.accent = info.color
         self._play_ui("ui_move")
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  به‌روزرسانی
-    # ─────────────────────────────────────────────────────────────────────
 
     def update(self, dt: float) -> None:
         # ---- انیمیشن تعویض ----
@@ -415,6 +430,8 @@ class ShipSelectScene(Scene):
             self._input_lock = False
 
         # ---- ستاره‌ها ----
+        # ستاره‌ها با سرعت اختصاصی خود به پایین حرکت می‌کنند و پس از خروج از صفحه از بالا بازمی‌گردند.
+        # Stars move downward at their individual speeds and return from the top after leaving the screen.
         for st in self.stars:
             st[1] += st[2] * dt
             if st[1] > H + 4:
@@ -428,6 +445,8 @@ class ShipSelectScene(Scene):
             bar.update(dt, t)
 
         # ---- رنگ lerp ----
+        # رنگ فعلی به‌تدریج به رنگ سفینه‌ی انتخاب‌شده نزدیک می‌شود تا تغییر رنگ ناگهانی نباشد.
+        # The current color gradually approaches the selected ship's color to avoid abrupt color changes.
         blend = min(1.0, dt * 8.0)
         self._color_curr = tuple(
             c + (t - c) * blend
@@ -440,9 +459,6 @@ class ShipSelectScene(Scene):
         self.btn_back.update(dt, mouse_pos)
         self.btn_select.update(dt, mouse_pos)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رندر
-    # ─────────────────────────────────────────────────────────────────────
 
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill(S.Palette.BG_DEEP)
@@ -481,6 +497,9 @@ class ShipSelectScene(Scene):
         cx = PREVIEW_CX + math.sin(self.time * 0.3) * 20
         cy = PREVIEW_CY + math.cos(self.time * 0.25) * 15
         halo = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+
+        # دایره‌های هم‌مرکز با آلفای تدریجی، هاله‌ای نرم و بدون لبه‌ی مشخص ایجاد می‌کنند.
+        # Concentric circles with gradually changing alpha create a soft glow without a visible edge.
         for rr in range(r, 0, -10):
             a = int(5 * (1 - rr / r) ** 1.5)
             if a <= 0:
@@ -494,6 +513,8 @@ class ShipSelectScene(Scene):
         cx = W // 2
         pulse = 1.0 + 0.02 * math.sin(self.time * 2.5)
 
+        # مقیاس عنوان با تابع سینوسی کمی تغییر می‌کند تا پالس ظریفی ایجاد شود.
+        # The title scale changes slightly with a sine wave to create a subtle pulse.
         img = self.font_title.render("SELECT YOUR SHIP", True, self._accent)
         w = int(img.get_width() * pulse)
         h = int(img.get_height() * pulse)
@@ -513,6 +534,9 @@ class ShipSelectScene(Scene):
         # خط تزئینی زیر عنوان (بدون متن اضافی)
         line_w = int(W * 0.42)
         line_y = DIVIDER_Y
+
+        # شفافیت خط در مرکز بیشترین مقدار را دارد و به سمت دو انتها کاهش می‌یابد.
+        # The line is most opaque at the center, with its opacity fading toward both ends.
         for i in range(line_w):
             t = i / line_w
             a = int(120 * math.sin(math.pi * t))
@@ -527,6 +551,8 @@ class ShipSelectScene(Scene):
         r = FRAME_R
 
         # ---- هگزاگونال پس‌زمینه ----
+        # شش رأس با فاصله‌ی زاویه‌ای برابر، شکل هندسی قاب را تشکیل می‌دهند.
+        # Six vertices with equal angular spacing define the hexagonal frame.
         hex_points = [
             (cx + math.cos(-math.pi / 2 + i * math.tau / 6) * (r + 14),
              cy + math.sin(-math.pi / 2 + i * math.tau / 6) * (r + 14))
@@ -549,25 +575,34 @@ class ShipSelectScene(Scene):
         # ---- گوشه‌های تیز (corner brackets) ----
         for i in range(6):
             a = -math.pi / 2 + i * math.tau / 6
+
             # نقطه‌ی رأس هگزاگونال
             vx = cx + math.cos(a) * (r + 14)
             vy = cy + math.sin(a) * (r + 14)
+
             # دو نقطه‌ی کناری برای کشیدن براکت
             a1 = a - 0.28
             a2 = a + 0.28
             p1 = (cx + math.cos(a1) * (r + 14), cy + math.sin(a1) * (r + 14))
             p2 = (cx + math.cos(a2) * (r + 14), cy + math.sin(a2) * (r + 14))
+
             # خط‌های ضخیم
             pygame.draw.line(surface, self._accent, p1, (vx, vy), 3)
             pygame.draw.line(surface, self._accent, (vx, vy), p2, 3)
 
         # ---- ذرات چرخان دور قاب ----
+        # زاویه‌ی هر ذره با سرعت اختصاصی خودش افزایش می‌یابد و موقعیت آن روی مسیر دایره‌ای محاسبه می‌شود.
+        # Each particle advances by its own angular speed, and its position is calculated along a circular path.
         for dot in self._ring_dots:
             dot["angle"] += dot["speed"] * 0.016   # dt جزئی
             a = dot["angle"]
+
             # موقعیت روی هگزاگونال (تقریبی با دایره)
             px = cx + math.cos(a) * (r + 6)
             py = cy + math.sin(a) * (r + 6)
+
+            # فاز مستقل هر ذره باعث می‌شود شدت نور آن‌ها هم‌زمان تغییر نکند.
+            # Each particle has an independent phase, so their glow intensities do not pulse in sync.
             pulse_a = 0.5 + 0.5 * math.sin(self.time * 4 + dot["phase"])
             alpha = int(120 + 100 * pulse_a)
             size = dot["size"]
@@ -585,6 +620,8 @@ class ShipSelectScene(Scene):
             return
 
         # انیمیشن
+        # منحنی ease-out هم‌زمان میزان جابه‌جایی افقی و شفافیت سفینه را کنترل می‌کند.
+        # The ease-out curve controls both the ship's horizontal offset and its opacity.
         t = self._transition_t
         e = _ease_out_cubic(t)
         offset_x = int((1.0 - e) * -self._transition_dir * 80)
@@ -593,6 +630,8 @@ class ShipSelectScene(Scene):
         ship_cx = cx + offset_x
         ship_cy = cy
 
+        # وضعیت نمونه‌ی پیش‌نمایش پیش از رسم، با زمان و موقعیت فعلی صحنه هماهنگ می‌شود.
+        # The preview instance is synchronized with the scene's current time and position before rendering.
         preview.x = ship_cx
         preview.y = ship_cy
         preview.vx = 0.0
@@ -606,6 +645,8 @@ class ShipSelectScene(Scene):
         if alpha >= 0.99:
             preview.draw_entity(surface)
         else:
+            # هنگام انتقال، سفینه ابتدا روی سطحی جداگانه رسم می‌شود تا شفافیت کل تصویر اعمال شود.
+            # During transitions, the ship is drawn onto a separate surface so opacity can be applied to the entire image.
             size = int(preview.radius * 5)
             tmp = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
             preview.x = size
@@ -620,6 +661,7 @@ class ShipSelectScene(Scene):
         num_text = f"{idx} / {total}"
         num_img = self.font_num.render(num_text, True, self._accent)
         num_rect = num_img.get_rect(center=(cx, cy + r + 40))
+
         # پس‌زمینه‌ی کوچک
         bg = pygame.Surface((num_rect.width + 16, num_rect.height + 6), pygame.SRCALPHA)
         pygame.draw.rect(bg, (10, 15, 28, 180), bg.get_rect(), border_radius=4)
@@ -666,6 +708,9 @@ class ShipSelectScene(Scene):
         div_x1 = INFO_X
         div_x2 = INFO_X + INFO_W
         line_surf = pygame.Surface((div_x2 - div_x1, 1), pygame.SRCALPHA)
+
+        # شفافیت خط در مرکز بیشتر است و به‌صورت متقارن به سمت لبه‌ها کاهش می‌یابد.
+        # The line is more opaque at its center and fades symmetrically toward both edges.
         for i in range(div_x2 - div_x1):
             t_line = i / (div_x2 - div_x1)
             a = int(80 * alpha * (1 - abs(t_line - 0.5) * 2) + 40)
@@ -694,6 +739,7 @@ class ShipSelectScene(Scene):
         pygame.draw.polygon(surface, self._accent, [
             (lx, cy - 16), (lx + 20, cy), (lx, cy + 16),
         ])
+
         # فلش راست
         rx = PREVIEW_CX + FRAME_R + 50 + offset
         pygame.draw.polygon(surface, self._accent, [
@@ -706,12 +752,12 @@ class ShipSelectScene(Scene):
         img = self.font_hint.render(hint, True, (120, 140, 170))
         surface.blit(img, img.get_rect(center=(W // 2, HINT_Y)))
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  اکشن‌ها
-    # ─────────────────────────────────────────────────────────────────────
 
     def _confirm_select(self) -> None:
         self._play_ui("ui_confirm")
+
+        # کلید سفینه‌ی انتخاب‌شده در Game ذخیره می‌شود تا Gameplay از همان سفینه استفاده کند.
+        # The selected ship key is stored in Game so Gameplay can use the chosen ship.
         try:
             setattr(self.game, "selected_ship", self.current_key)
         except Exception:

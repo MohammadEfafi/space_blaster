@@ -35,9 +35,6 @@ from typing import Optional
 from core import settings as S
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  داده‌ی یک امتیاز
-# ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass(slots=True)
 class ScoreEntry:
@@ -49,6 +46,8 @@ class ScoreEntry:
 
     @classmethod
     def from_dict(cls, d: dict) -> "ScoreEntry":
+        # مقادیر ورودی هنگام بارگذاری به نوع مورد انتظار تبدیل می‌شوند تا ساختار رکورد یکپارچه بماند.
+        # Input values are converted to the expected types during loading to keep record structures consistent.
         return cls(
             score=int(d.get("score", 0)),
             wave=int(d.get("wave", 0)),
@@ -57,6 +56,8 @@ class ScoreEntry:
         )
 
     def to_dict(self) -> dict:
+        # رکورد به یک دیکشنری ساده تبدیل می‌شود تا مستقیماً در قالب JSON قابل ذخیره باشد.
+        # The record is converted to a plain dictionary so it can be serialized directly as JSON.
         return {
             "score": self.score,
             "wave": self.wave,
@@ -66,14 +67,13 @@ class ScoreEntry:
 
     def date_short(self) -> str:
         """تاریخ به شکل کوتاه YYYY-MM-DD."""
+        # بخش تاریخ قبل از جداکننده‌ی T استخراج می‌شود؛ در غیر این صورت، حداکثر ۱۰ نویسه‌ی اول برگردانده می‌شود.
+        # The date portion before the T separator is extracted; otherwise, at most the first 10 characters are returned.
         if "T" in self.date:
             return self.date.split("T")[0]
         return self.date[:10] if self.date else "—"
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  کلاس HighScoreStore
-# ═══════════════════════════════════════════════════════════════════════════
 
 class HighScoreStore:
     """مدیر جدول امتیازات با ذخیره‌ی دائمی."""
@@ -81,6 +81,8 @@ class HighScoreStore:
     MAX_ENTRIES: int = 10
 
     def __init__(self, path: Optional[Path] = None) -> None:
+        # در صورت مشخص‌نشدن مسیر، فایل امتیازات در پوشه‌ی ذخیره‌سازی پیش‌فرض بازی قرار می‌گیرد.
+        # If no path is provided, the score file is placed in the game's default save directory.
         if path is None:
             path = S.SAVE_DIR / "highscore.json"
         self.path: Path = Path(path)
@@ -88,7 +90,6 @@ class HighScoreStore:
         self.total_games: int = 0
         self._load()
 
-    # ─────────────────────────────────────────────────────────────────────
 
     def _load(self) -> None:
         """بارگذاری از فایل با مهاجرت خودکار از فرمت قدیمی."""
@@ -101,6 +102,8 @@ class HighScoreStore:
                 return
 
             # ---- فرمت جدید ----
+            # اگر فایل شامل فهرست scores باشد، فقط ورودی‌هایی که ساختار دیکشنری دارند به رکورد تبدیل می‌شوند.
+            # If the file contains a scores list, only entries represented as dictionaries are converted into records.
             if "scores" in data and isinstance(data["scores"], list):
                 self.scores = [
                     ScoreEntry.from_dict(d)
@@ -108,6 +111,8 @@ class HighScoreStore:
                 ]
 
             # ---- مهاجرت از فرمت قدیمی ----
+            # در ساختار قدیمی فقط یک امتیاز برتر ذخیره می‌شد؛ این بخش آن را به قالب جدید یک رکوردی تبدیل می‌کند.
+            # The legacy format stored only one high score; this section converts it into the new format as a single record.
             elif "high_score" in data:
                 old_high = int(data.get("high_score", 0))
                 old_wave = int(data.get("best_wave", 0))
@@ -121,6 +126,8 @@ class HighScoreStore:
                     )]
 
             self.total_games = int(data.get("total_games", 0))
+            # امتیازها به‌صورت نزولی مرتب می‌شوند و فقط تعداد رکوردهای مجاز نگه داشته می‌شود.
+            # Scores are sorted in descending order, and only the allowed number of records is retained.
             self.scores.sort(key=lambda e: e.score, reverse=True)
             self.scores = self.scores[:self.MAX_ENTRIES]
         except Exception as exc:
@@ -129,6 +136,8 @@ class HighScoreStore:
     def save(self) -> None:
         """ذخیره‌ی جدول در فایل JSON."""
         try:
+            # پوشه‌ی والد در صورت نیاز ساخته می‌شود تا نبودن مسیر ذخیره‌سازی مانع نوشتن فایل نشود.
+            # The parent directory is created when necessary so a missing save directory does not prevent writing the file.
             self.path.parent.mkdir(parents=True, exist_ok=True)
             data = {
                 "scores": [e.to_dict() for e in self.scores],
@@ -139,7 +148,6 @@ class HighScoreStore:
         except Exception as exc:
             print(f"[HighScore] Failed to save: {exc}")
 
-    # ─────────────────────────────────────────────────────────────────────
 
     def submit(self, score: int, wave: int, ship: str) -> tuple[bool, int]:
         """
@@ -160,26 +168,31 @@ class HighScoreStore:
         self.scores.sort(key=lambda e: e.score, reverse=True)
         self.scores = self.scores[:self.MAX_ENTRIES]
 
+        # هویت شیء بررسی می‌شود تا رتبه‌ی همین رکورد تازه ثبت‌شده پیدا شود، حتی اگر امتیاز آن با رکورد دیگری برابر باشد.
+        # Object identity is checked to find the rank of this newly submitted record, even when its score matches another record.
         rank = 0
         for i, e in enumerate(self.scores):
             if e is entry:
                 rank = i + 1
                 break
 
+        # رتبه‌ی اول نشان می‌دهد رکورد جدید بالاترین امتیاز فعلی جدول را به دست آورده است.
+        # A rank of first indicates that the new entry has achieved the highest score currently in the leaderboard.
         is_new_record = (rank == 1)
         self.save()
         return is_new_record, rank
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  خواص
-    # ─────────────────────────────────────────────────────────────────────
 
     @property
     def high_score(self) -> int:
+        # به‌دلیل مرتب‌سازی نزولی، اولین رکورد بالاترین امتیاز جدول را دارد.
+        # Because the entries are sorted in descending order, the first record holds the leaderboard's highest score.
         return self.scores[0].score if self.scores else 0
 
     @property
     def best_wave(self) -> int:
+        # بیشترین شماره‌ی موج در میان رکوردهای نگهداری‌شده محاسبه می‌شود.
+        # The highest wave number among the retained records is calculated.
         return max((e.wave for e in self.scores), default=0)
 
     @property

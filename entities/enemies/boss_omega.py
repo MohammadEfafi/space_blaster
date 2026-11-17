@@ -1,4 +1,8 @@
+
 """
+entities/enemies/boss_omega.py
+===========================
+
 OMEGA CORE — هسته‌ی امگا (باس افسانه‌ای).
 
 دیزاین:
@@ -35,12 +39,16 @@ from entities.enemies.boss_base import BossBase, draw_poly_alpha, draw_line_alph
 class OmegaCore(BossBase):
     """OMEGA CORE — قلب مکانیکی کیهان."""
 
+    # مشخصات اصلی باس و مقادیر پایه‌ی آن
+    # Core boss attributes and base configuration
     HP = 180
     RADIUS = 110
     BODY_COLOR = (255, 140, 40)
     boss_name = "OMEGA CORE"
 
     # ---- زمان‌بندی ----
+    # زمان‌بندی حملات و حرکت هنگام ورود و جابه‌جایی
+    # Attack timing and movement settings for entry and swaying
     ATTACK_INTERVAL_P1 = 2.0
     ATTACK_INTERVAL_P2 = 1.5
     ATTACK_INTERVAL_P3 = 1.0
@@ -49,12 +57,16 @@ class OmegaCore(BossBase):
     SWAY_SPEED = 0.5
 
     # ---- فاز ----
+    # آستانه‌ی سلامتی برای ورود به فازهای بعدی
+    # Health thresholds for transitioning into later phases
     PHASE_2_THRESHOLD = 0.66
     PHASE_3_THRESHOLD = 0.33
 
     def __init__(self, x, y, scene=None, *, target_y=None):
         super().__init__(x, y, scene=scene, target_y=target_y)
         # ---- انیمیشن ----
+        # وضعیت اولیه‌ی انیمیشن اجزای بصری هسته‌ی امگا
+        # Initial animation state for Omega Core's visual components
         self._ring_rot = [0.0, 0.0, 0.0]
         self._crystal_phases = [random.uniform(0, math.tau) for _ in range(12)]
         self._crystal_orbit_radius = [random.uniform(0.85, 1.05) for _ in range(12)]
@@ -64,6 +76,8 @@ class OmegaCore(BossBase):
         self._phase_flash = 0.0
 
         # ---- spiral state ----
+        # وضعیت و پارامترهای لازم برای اجرای حمله‌ی مارپیچی
+        # State and parameters required for the spiral attack
         self._spiral_angle = 0.0
         self._spiral_timer = 0.0
         self._spiral_duration = 1.5
@@ -71,20 +85,22 @@ class OmegaCore(BossBase):
         self._spiral_speed = 180
 
         # ---- زاویه‌ی بدنه (برای تنوع بیشتر) ----
+        # وضعیت چرخش بدنه و جهت نگاه چشم نسبت به هدف
+        # Hull rotation state and eye direction relative to the target
         self._body_rot = 0.0
         self._eye_look = (0.0, 0.0)
         self._eye_target = (0.0, 0.0)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  به‌روزرسانی
-    # ─────────────────────────────────────────────────────────────────────
-
     def update_ai(self, dt: float) -> None:
+        # ذخیره‌ی فاز فعلی برای تشخیص تغییر فاز پس از به‌روزرسانی
+        # Preserve the current phase to detect a phase transition after updating
         # ---- قبل از صدا زدن super، فاز قبلی رو ذخیره کن ----
         prev_phase = self._phase
 
         super().update_ai(dt)
 
+        # به‌روزرسانی چرخش حلقه‌ها و ضربان اجزای متحرک
+        # Update ring rotations and the pulsing animation components
         # ---- چرخش‌ها ----
         self._ring_rot[0] += dt * 0.6
         self._ring_rot[1] -= dt * 0.8
@@ -92,6 +108,8 @@ class OmegaCore(BossBase):
         self._core_pulse += dt * 5.0
         self._body_rot += dt * (0.15 + self._phase * 0.1)
 
+        # محاسبه‌ی جهت نگاه چشم به سمت بازیکن زنده
+        # Calculate the eye direction toward the living player
         # ---- چشم بازیکن رو دنبال می‌کنه ----
         player = getattr(self.scene, "player", None) if self.scene else None
         if player and player.alive:
@@ -105,16 +123,22 @@ class OmegaCore(BossBase):
             self._eye_look[1] + (self._eye_target[1] - self._eye_look[1]) * blend,
         )
 
+        # کاهش تدریجی شدت افکت نورانی تغییر فاز
+        # Gradually reduce the intensity of the phase transition flash
         # ---- phase flash decay ----
         if self._phase_flash > 0:
             self._phase_flash = max(0.0, self._phase_flash - dt * 2.0)
 
+        # اجرای افکت ویژه در صورت ورود به فاز جدید
+        # Trigger the special effect when entering a new phase
         # ---- تشخیص تغییر فاز ----
         if self._phase > prev_phase:
             self._on_phase_change()
 
     def _on_phase_change(self) -> None:
         """وقتی فاز عوض می‌شه، افکت قوی."""
+        # فعال‌سازی فلش تصویری و افکت‌های صوتی و لرزش دوربین
+        # Activate the visual flash, sound effect, and camera shake
         self._phase_flash = 1.0
         try:
             if self.scene is not None:
@@ -123,17 +147,17 @@ class OmegaCore(BossBase):
         except Exception:
             pass
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  حمله‌ها
-    # ─────────────────────────────────────────────────────────────────────
-
     def _update_attacks(self, dt: float) -> None:
+        # مدیریت اختصاصی حمله‌ی مارپیچی و واگذاری سایر حملات به کلاس پایه
+        # Handle the spiral attack separately and delegate other attacks to the base class
         if self._current_attack == "spiral":
             self._update_spiral(dt)
             return
         super()._update_attacks(dt)
 
     def _pick_and_execute_attack(self) -> None:
+        # تعیین مجموعه حملات مجاز بر اساس فاز فعلی باس
+        # Select the available attack patterns based on the current boss phase
         if self._phase == 1:
             attacks = ["spiral", "meteor", "nova", "aimed"]
         elif self._phase == 2:
@@ -143,6 +167,8 @@ class OmegaCore(BossBase):
 
         name = random.choice(attacks)
 
+        # اجرای الگوی انتخاب‌شده با تنظیمات متناسب با هر حمله
+        # Execute the selected pattern using its corresponding attack settings
         if name == "spiral":
             self._start_spiral(arms=2, duration=1.5, speed=180)
         elif name == "fast_spiral":
@@ -162,6 +188,8 @@ class OmegaCore(BossBase):
             self._attack_timer = self._get_attack_interval() * 1.3
 
     # ---- SPIRAL ----
+    # راه‌اندازی حمله‌ی مارپیچی با تعداد بازوها و سرعت قابل تنظیم
+    # Initialize the spiral attack with configurable arms and speed
     def _start_spiral(self, arms: int = 2, duration: float = 1.5, speed: float = 180) -> None:
         self._current_attack = "spiral"
         self._attack_progress = 0.0
@@ -171,6 +199,8 @@ class OmegaCore(BossBase):
         self._spiral_arms = arms
         self._spiral_speed = speed
 
+    # تولید تدریجی گلوله‌ها در مسیر مارپیچی و پایان دادن به حمله
+    # Gradually spawn projectiles along a spiral path and finish the attack
     def _update_spiral(self, dt: float) -> None:
         self._attack_progress += dt / self._spiral_duration
         self._spiral_timer -= dt
@@ -196,6 +226,8 @@ class OmegaCore(BossBase):
             self._reset_attack()
 
     # ---- METEOR ----
+    # بارش گلوله‌ها از موقعیت‌های تصادفی بالای صفحه
+    # Spawn projectiles from random positions above the screen
     def _attack_meteor(self) -> None:
         if self.scene is None:
             return
@@ -216,21 +248,23 @@ class OmegaCore(BossBase):
             except Exception:
                 pass
 
+        # پخش صدای حمله و ایجاد لرزش کوتاه دوربین
+        # Play the attack sound and apply a brief camera shake
         try:
             self.scene.audio.play("enemy_shoot")
             self.scene.camera.shake(5.0)
         except Exception:
             pass
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رسم
-    # ─────────────────────────────────────────────────────────────────────
-
     def draw_body(self, surface: pygame.Surface, alpha: int = 255) -> None:
+        # محاسبه‌ی اندازه و مرکز بدنه برای ترسیم اجزای بصری
+        # Calculate the body dimensions and center for rendering its visual components
         r = int(self.radius * 1.25)
         cx, cy = int(self.x), int(self.y)
 
         # ---- رنگ بر اساس فاز ----
+        # انتخاب رنگ‌های اصلی، ثانویه و درخشش متناسب با فاز باس
+        # Select primary, secondary, and glow colors according to the boss phase
         if self._phase == 1:
             primary = (255, 150, 40)
             secondary = (200, 60, 20)
@@ -245,12 +279,15 @@ class OmegaCore(BossBase):
             glow = (255, 220, 255)
 
         # اگه در حال phase flash، رنگ سفید بشه
+        # Blend the phase colors toward white during the transition flash
         if self._phase_flash > 0:
             t = self._phase_flash
             primary = tuple(int(p * (1-t) + 255 * t) for p in primary)
             glow = (255, 255, 255)
 
         # ---- ۱. هاله‌ی غول‌پیکر ----
+        # ایجاد هاله‌ای بزرگ با شفافیت تدریجی در اطراف هسته
+        # Render a large aura with gradually fading transparency around the core
         aura_r = int(r * 1.9)
         aura = pygame.Surface((aura_r * 2, aura_r * 2), pygame.SRCALPHA)
         for rr in range(aura_r, 0, -6):
@@ -261,6 +298,8 @@ class OmegaCore(BossBase):
                      special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۲. ۱۲ کریستال شناور در مدار ----
+        # محاسبه‌ی موقعیت مداری و ترسیم رد نور و شکل هر کریستال
+        # Calculate orbital positions and render each crystal with its light trail
         for i in range(12):
             base_angle = self._t * 0.7 + i * math.tau / 12 + self._crystal_phases[i]
             orbit_r = r * self._crystal_orbit_radius[i]
@@ -289,6 +328,8 @@ class OmegaCore(BossBase):
             draw_poly_alpha(surface, crystal, (255, 255, 255, 255), width=1)
 
         # ---- ۳. ۴ شاخک انرژی ----
+        # ساخت شاخک‌های موج‌دار با قطعات متصل و هاله‌ی نورانی در انتها
+        # Build wavy energy tendrils from connected segments with glowing tips
         for i in range(4):
             base_angle = (i / 4) * math.tau + self._t * 0.2 + math.pi / 4
             phase = self._tendril_phases[i] + self._t * 2.5
@@ -323,6 +364,8 @@ class OmegaCore(BossBase):
                                  special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۴. ۳ حلقه‌ی چرخان (نقاط درخشان) ----
+        # ترسیم سه حلقه با جهت و سرعت چرخش متفاوت و نقاط نورانی
+        # Render three rings with different rotation directions, speeds, and glowing points
         for ring_idx, (ring_r_ratio, rot_speed, color) in enumerate([
             (1.55, 1.0, primary),
             (1.40, -0.7, glow),
@@ -348,6 +391,8 @@ class OmegaCore(BossBase):
                 pygame.draw.circle(surface, color, (px, py), size)
 
         # ---- ۵. بدنه‌ی اصلی (کره) ----
+        # ترسیم لایه‌های بدنه برای ایجاد عمق و تفاوت روشنایی
+        # Render the hull layers to create depth and visual contrast
         # سایه (عمق)
         pygame.draw.circle(surface, self._darker(secondary, 60),
                            (cx + 4, cy + 4), r)
@@ -360,6 +405,8 @@ class OmegaCore(BossBase):
         pygame.draw.circle(surface, primary, (cx, cy), int(r * 0.78))
 
         # ---- ۶. شکاف‌های درخشان (رگ‌های انرژی) ----
+        # ایجاد شکاف‌های زیگزاگی با نور پالسی روی سطح بدنه
+        # Create pulsing zigzag energy cracks across the hull surface
         num_cracks = 8 + self._phase * 3  # ۱۱ تا در فاز ۳
         for i in range(num_cracks):
             angle = self._crack_angles[i % len(self._crack_angles)] + self._body_rot
@@ -382,12 +429,16 @@ class OmegaCore(BossBase):
             draw_line_alpha(surface, (*glow, a), (x2, y2), (x3, y3), width)
 
         # ---- ۷. هاله‌ی درونی (حلقه‌ی نازک روی بدنه) ----
+        # ترسیم حلقه‌ای باریک و نیمه‌شفاف در نزدیکی لبه‌ی بدنه
+        # Render a thin, semi-transparent ring near the edge of the hull
         for rr in range(r - 2, int(r * 0.85), -2):
             a = int(60 * (1 - (r - rr) / (r * 0.15)))
             if a > 0:
                 pygame.draw.circle(surface, (*glow, a), (cx, cy), rr, 1)
 
         # ---- ۸. هسته‌ی مرکزی پالسی ----
+        # ایجاد هسته‌ی مرکزی با اندازه و شدت نور متغیر
+        # Create the central core with varying size and glow intensity
         pulse = 0.7 + 0.3 * math.sin(self._core_pulse)
         core_r = int(r * 0.30 * pulse)
 
@@ -406,6 +457,8 @@ class OmegaCore(BossBase):
         pygame.draw.circle(surface, (255, 255, 255), (cx, cy), max(2, core_r - 2))
 
         # ---- ۹. چشم مرکزی (بازیکن رو دنبال می‌کنه) ----
+        # محاسبه‌ی موقعیت چشم و حرکت مردمک در جهت بازیکن
+        # Calculate the eye position and move its pupil toward the player
         eye_r = int(r * 0.15)
         ex = cx + int(self._eye_look[0] * r * 0.08)
         ey = cy + int(self._eye_look[1] * r * 0.08)
@@ -421,6 +474,8 @@ class OmegaCore(BossBase):
                            (pupil_x - 2, pupil_y - 2), max(1, eye_r // 4))
 
         # ---- ۱۰. حلقه‌ی فاز (نشانگر) ----
+        # نمایش میزان سلامتی باقی‌مانده به شکل قوس اطراف باس
+        # Display the remaining health as an arc around the boss
         phase_ring_r = int(r * 1.05)
         phase_arc = (self.hp / self.max_hp) * math.tau
         for i in range(int(phase_arc / 0.05)):
@@ -430,6 +485,8 @@ class OmegaCore(BossBase):
             pygame.draw.circle(surface, glow, (int(px), int(py)), 2)
 
         # ---- ۱۱. phase flash (اثر تغییر فاز) ----
+        # نمایش موج نور سفید هنگام تغییر فاز باس
+        # Render a white expanding flash when the boss changes phase
         if self._phase_flash > 0:
             t = self._phase_flash
             flash_r = int(r * (1.5 + (1 - t) * 2.0))

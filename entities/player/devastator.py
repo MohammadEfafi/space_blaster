@@ -28,19 +28,21 @@ from entities.bullet import BulletKind
 from entities.player.base import Player
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  کلاس Devastator
-# ═══════════════════════════════════════════════════════════════════════════
+
 
 class Devastator(Player):
     """ویرانگر — کند، سنگین، پرقدرت."""
 
     # ---- شناسه ----
+    # مشخصات هویتی سفینه برای شناسایی و نمایش در بازی تعریف می‌شوند.
+    # The ship's identity fields are defined for identification and display.
     NAME        = "DEVASTATOR"
     DESCRIPTION = "Every shot is a statement. Make them count."
     KIND_KEY    = "devastator"
 
     # ---- آمار (سنگین و پرقدرت) ----
+    # آمار اختصاصی این سفینه، ویژگی‌های یک سفینه‌ی سنگین را تعیین می‌کند.
+    # This ship's stats define the characteristics of a heavy vessel.
     MAX_HP:        int   = 4
     SPEED:         float = 290.0
     RADIUS:        float = 24.0        # بزرگ
@@ -51,44 +53,48 @@ class Devastator(Player):
     BULLET_KIND:   BulletKind = BulletKind.PLASMA  # گلوله‌ی درشت نارنجی
 
     # فیزیک سنگین (شتاب کم، میرایی زیاد — حس تانک)
+    # شتاب و میرایی کمتر، حس حرکت سنگین و کنترل کندتر ایجاد می‌کنند.
+    # Lower acceleration and drag create a heavier, slower handling feel.
     ACCEL: float = 5.5
     DRAG:  float = 6.0
 
     # ---- رنگ‌ها ----
+    # پالت رنگی قرمز، نارنجی و طلایی ظاهر صنعتی سفینه را شکل می‌دهد.
+    # The red, orange, and gold palette gives the ship its industrial appearance.
     PRIMARY_COLOR:   tuple[int, int, int] = (230, 90, 60)      # قرمز-نارنجی
     SECONDARY_COLOR: tuple[int, int, int] = (90, 40, 30)
     ACCENT_COLOR:    tuple[int, int, int] = (255, 200, 60)     # طلایی
     HIGHLIGHT_COLOR: tuple[int, int, int] = (255, 230, 200)    # کرم
     FLAME_COLOR:     tuple[int, int, int] = (255, 130, 30)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  الگوی شلیک: تک گلوله‌ی سنگین
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def _get_shot_angles(self) -> list[float]:
         """
         Devastator گلوله‌ی سنگین شلیک می‌کنه (یکی، از مرکز).
         با پاورآپ، سه‌گانه سنگین.
         """
+        # پاورآپ، الگوی شلیک را از یک گلوله به سه گلوله تغییر می‌دهد.
+        # The power-up changes the firing pattern from one bullet to three.
         if self.powerup_time > 0.0:
             return [-105.0, -90.0, -75.0]
         return [-90.0]
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  شعله‌های موتور: دو تا بزرگ کناری (صنعتی)
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def get_engine_offsets(self) -> list[tuple[float, float, float]]:
+        # دو خروجی موتور در دو سمت بخش پایینی سفینه قرار دارند.
+        # Two engine outlets are positioned on either side of the ship's lower section.
         return [
             (-0.60, 0.90, 1.10),
             ( 0.60, 0.90, 1.10),
         ]
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رسم بدنه — ویرانگر صنعتی
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def draw_ship(self, surface: pygame.Surface, cx: int, cy: int) -> None:
+        # رنگ‌های اختصاصی سفینه برای استفاده در اجزای مختلف رسم آماده می‌شوند.
+        # Ship-specific colors are assigned for use across its visual components.
         r = int(self.radius)
         primary = self.PRIMARY_COLOR
         secondary = self.SECONDARY_COLOR
@@ -96,6 +102,8 @@ class Devastator(Player):
         accent = self.ACCENT_COLOR
 
         # ---- ۱. سایه‌ی زیر (عمق) ----
+        # سایه در پشت بدنه، عمق بصری سفینه را بیشتر می‌کند.
+        # The shadow behind the hull adds visual depth to the ship.
         shadow = [
             (cx - int(r * 0.95), cy - int(r * 0.75) + 2),
             (cx - int(r * 1.05), cy + int(r * 0.70) + 2),
@@ -105,6 +113,8 @@ class Devastator(Player):
         pygame.draw.polygon(surface, (40, 10, 5), shadow)
 
         # ---- ۲. بال‌های مربعی زره‌ای ----
+        # دو بال زرهی در دو سمت بدنه رسم می‌شوند.
+        # Two armored wings are drawn on either side of the hull.
         for sign in (-1, 1):
             wing = [
                 (cx + sign * int(r * 0.55), cy - int(r * 0.70)),
@@ -125,6 +135,8 @@ class Devastator(Player):
             )
 
         # ---- ۳. پادهای سلاح بزرگ (توپ‌های پلاسما) ----
+        # دو توپ پلاسما در طرفین بدنه قرار می‌گیرند.
+        # Two plasma cannons are positioned on the sides of the hull.
         for sign in (-1, 1):
             pod_x = cx + sign * int(r * 0.75)
             pod_y = cy - int(r * 0.15)
@@ -142,6 +154,8 @@ class Devastator(Player):
             # دهانه‌ی توپ (دایره‌ی درخشان)
             tip_y = pod_y - pod_h // 2 - 2
             # هاله‌ی نارنجی
+            # درخشش دهانه با چند لایه‌ی دایره‌ای نیمه‌شفاف ساخته می‌شود.
+            # The muzzle glow is created using several translucent circular layers.
             glow = pygame.Surface((20, 20), pygame.SRCALPHA)
             for rr in range(10, 0, -2):
                 a = int(120 * (1 - rr / 10))
@@ -156,6 +170,8 @@ class Devastator(Player):
             pygame.draw.circle(surface, (255, 240, 180), (pod_x, tip_y), max(1, int(r * 0.05)))
 
         # ---- ۴. بدنه‌ی اصلی — حجیم و ذوزنقه‌ای ----
+        # بدنه‌ی اصلی با چند رأس، فرم پهن و زرهی سفینه را ایجاد می‌کند.
+        # The main polygon creates the ship's broad, armored silhouette.
         hull = [
             (cx,                  cy - int(r * 1.00)),   # بالا
             (cx - int(r * 0.50),  cy - int(r * 0.65)),   # چپ بالا
@@ -168,6 +184,8 @@ class Devastator(Player):
         pygame.draw.polygon(surface, highlight, hull, 2)
 
         # ---- ۵. لایه‌ی میانی روشن‌تر ----
+        # لایه‌ی داخلی روشن‌تر، جزئیات سطح بدنه را برجسته می‌کند.
+        # The brighter inner layer highlights details on the hull surface.
         inner = [
             (cx,                  cy - int(r * 0.85)),
             (cx - int(r * 0.35),  cy - int(r * 0.45)),
@@ -179,6 +197,8 @@ class Devastator(Player):
         pygame.draw.polygon(surface, (250, 130, 90), inner)
 
         # ---- ۶. خطوط زره افقی ----
+        # خطوط افقی روی بدنه، جزئیات صفحات زره را نمایش می‌دهند.
+        # Horizontal lines on the hull represent armor plating details.
         for y_off in (-0.35, 0.10, 0.45):
             y = cy + int(r * y_off)
             w = int(r * 0.55)
@@ -186,6 +206,8 @@ class Devastator(Player):
                              (cx - w, y), (cx + w, y), 1)
 
         # ---- ۷. خط عمودی میانی (شکاف) ----
+        # خط مرکزی، بخش‌های میانی بدنه را از نظر بصری تفکیک می‌کند.
+        # The central line visually separates the middle sections of the hull.
         pygame.draw.line(
             surface, secondary,
             (cx, cy - int(r * 0.80)),
@@ -194,9 +216,13 @@ class Devastator(Player):
         )
 
         # ---- ۸. هسته‌ی نارنجی پالسی (قلب ویرانگر) ----
+        # هسته‌ی مرکزی با افکت جداگانه رسم می‌شود.
+        # The central core is rendered using a dedicated effect.
         self._draw_reactor_core(surface, cx, cy, r)
 
         # ---- ۹. کابین کوچک مستطیلی (صنعتی) ----
+        # کابین کوچک در قسمت بالایی بدنه قرار می‌گیرد.
+        # A small cockpit is positioned in the upper section of the hull.
         cab_y = cy - int(r * 0.45)
         cab_w = max(4, int(r * 0.22))
         cab_h = max(3, int(r * 0.12))
@@ -209,6 +235,8 @@ class Devastator(Player):
         pygame.draw.rect(surface, accent, cab_rect.inflate(-2, -2))
 
         # ---- ۱۰. چراغ‌های هشدار (قرمز چشمک‌زن) ----
+        # شدت نور چراغ‌های هشدار با تابع سینوسی تغییر می‌کند.
+        # Warning light intensity varies according to a sine wave.
         blink = 0.5 + 0.5 * math.sin(self._t * 6.0)
         for sign in (-1, 1):
             tip_x = cx + sign * int(r * 1.10)
@@ -226,19 +254,21 @@ class Devastator(Player):
                          special_flags=pygame.BLEND_RGBA_ADD)
             pygame.draw.circle(surface, (255, 100, 100), (tip_x, tip_y), 3)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  راکتور مرکزی
-    # ─────────────────────────────────────────────────────────────────────
+
 
     def _draw_reactor_core(
         self, surface: pygame.Surface, cx: int, cy: int, r: int,
     ) -> None:
         """هسته‌ی نارنجی درخشان با پالس سریع."""
+        # پالس زمانی، اندازه‌ی هسته و شدت هاله‌ی اطراف آن را تغییر می‌دهد.
+        # The time-based pulse changes the core size and the intensity of its glow.
         pulse = 0.7 + 0.3 * math.sin(self._t * 7.0)
         core_r = max(3, int(r * 0.22 * pulse))
         core_y = cy + int(r * 0.05)
 
         # هاله‌ی نارنجی
+        # هاله با رسم دایره‌های متوالی و شفافیت متغیر ایجاد می‌شود.
+        # The glow is created by drawing successive circles with varying transparency.
         glow_size = int(r * 0.55)
         glow = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
         for rr in range(glow_size, 0, -1):
@@ -253,10 +283,14 @@ class Devastator(Player):
         )
 
         # هسته
+        # دو دایره‌ی هم‌مرکز، سطح روشن هسته را تشکیل می‌دهند.
+        # Two concentric circles form the bright surface of the core.
         pygame.draw.circle(surface, (255, 200, 120), (cx, core_y), core_r)
         pygame.draw.circle(surface, (255, 255, 220), (cx, core_y), max(1, core_r // 2))
 
         # حلقه‌ی چرخان دور هسته
+        # چهار نقطه با فاصله‌ی زاویه‌ای مساوی، اطراف هسته می‌چرخند.
+        # Four equally spaced dots rotate around the core.
         ring_r = int(r * 0.35)
         for i in range(4):
             a = self._t * 3.0 + i * math.pi / 2

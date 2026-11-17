@@ -37,10 +37,8 @@ if TYPE_CHECKING:
     from core.game import Game
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  داده‌ی ستاره‌ی پس‌زمینه
-# ═══════════════════════════════════════════════════════════════════════════
-
+# اطلاعات هر ستاره شامل موقعیت، سرعت، اندازه، رنگ و لایه عمق آن است.
+# Each star stores its position, speed, size, color, and depth layer.
 @dataclass
 class _Star:
     x: float
@@ -51,10 +49,8 @@ class _Star:
     layer: int   # 0 دور، 1 میانه، 2 نزدیک
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  دکمه‌ی منو
-# ═══════════════════════════════════════════════════════════════════════════
-
+# دکمه منو منطق تعامل و جلوه‌های بصری مستقل از خود صحنه را مدیریت می‌کند.
+# The menu button manages its interaction logic and visual effects independently of the scene.
 class _MenuButton:
     """
     یک دکمه‌ی تعاملی با انیمیشن نرم.
@@ -96,14 +92,22 @@ class _MenuButton:
 
     def update(self, dt: float, mouse_pos: tuple[int, int]) -> None:
         self._t += dt
+
+        # وضعیت hover با بررسی قرار گرفتن نشانگر ماوس داخل محدوده دکمه تعیین می‌شود.
+        # The hover state is determined by checking whether the mouse is inside the button bounds.
         # hover
         is_over = self._rect.collidepoint(mouse_pos)
         self.hovered = is_over or self.selected
 
         target = 1.0 if self.hovered else 0.0
+
+        # میان‌یابی تدریجی باعث می‌شود تغییر وضعیت hover ناگهانی نباشد.
+        # Gradual interpolation prevents abrupt changes in the hover state.
         # lerp نرم
         self._hover_amt += (target - self._hover_amt) * min(1.0, dt * 12.0)
 
+        # مقدار افکت کلیک به‌مرور کاهش می‌یابد تا جلوه فلاش به‌صورت تدریجی محو شود.
+        # The click effect gradually decreases so the flash fades out smoothly.
         # افکت کلیک
         if self._click_amt > 0.0:
             self._click_amt = max(0.0, self._click_amt - dt * 4.0)
@@ -131,7 +135,9 @@ class _MenuButton:
 
         # ---- پس‌زمینه (با شفافیت) ----
         bg = pygame.Surface(rect.size, pygame.SRCALPHA)
+
         # گرادیان عمودی خیلی ملایم برای زیبایی
+        # A subtle vertical gradient adds depth to the button background.
         top_color = (*S.Palette.HUD_ACCENT, min(255, alpha // 3))
         bot_color = (*S.Palette.HUD_ACCENT, min(255, alpha // 5))
         for y in range(rect.height):
@@ -160,6 +166,7 @@ class _MenuButton:
 
         # ---- متن ----
         # کمی جابه‌جایی افقی برای حس دینامیک
+        # A slight horizontal offset creates a more dynamic visual effect.
         offset_x = int(4 * self._hover_amt) * (1 if self.selected else 0)
         text_color = S.Palette.WHITE if self.hovered else S.Palette.HUD_TEXT
         img = font.render(self.label, True, text_color)
@@ -174,6 +181,9 @@ class _MenuButton:
         # ---- نشانگر انتخاب (فلش ▶) ----
         if self.selected:
             arrow_color = S.Palette.HUD_ACCENT
+
+            # حرکت سینوسی اندازه فاصله فلش‌ها را تغییر می‌دهد و جلوه پالس ایجاد می‌کند.
+            # Sinusoidal motion changes the arrows' spacing to create a pulsing effect.
             # پالس ملایم
             pulse = 6 + int(3 * math.sin(self._t * 6.0))
             arrow_x = rect.left - 22 - int(6 * self._hover_amt) - pulse
@@ -203,15 +213,10 @@ class _MenuButton:
             surface.blit(flash, rect.topleft)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  منوی اصلی
-# ═══════════════════════════════════════════════════════════════════════════
-
+# صحنه منوی اصلی، اجزای رابط کاربری و جلوه‌های پس‌زمینه را هماهنگ می‌کند.
+# The main menu scene coordinates the user interface elements and background effects.
 class MenuScene(Scene):
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  چرخه‌ی حیات
-    # ─────────────────────────────────────────────────────────────────────
 
     def on_enter(self) -> None:
         # ---- فونت‌ها ----
@@ -235,6 +240,9 @@ class MenuScene(Scene):
             _MenuButton("LEADERBOARD",   self._open_leaderboard, y=btn_start_y + btn_gap * 2),
             _MenuButton("QUIT",          self.quit_game,         y=btn_start_y + btn_gap * 3),
         ]
+
+        # اولین گزینه هنگام ورود به منو به‌صورت پیش‌فرض انتخاب می‌شود.
+        # The first option is selected by default when entering the menu.
         self.selected_idx = 0
         self.buttons[self.selected_idx].selected = True
 
@@ -248,13 +256,16 @@ class MenuScene(Scene):
         self.stars.clear()
         self.buttons.clear()
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  ستاره‌ها
-    # ─────────────────────────────────────────────────────────────────────
 
     def _spawn_stars(self, count: int) -> None:
         for _ in range(count):
+
+            # انتخاب تصادفی لایه‌ها با وزن‌های متفاوت، تعداد ستاره‌های دور را بیشتر می‌کند.
+            # Weighted random selection creates more distant stars than nearby ones.
             layer = random.choices([0, 1, 2], weights=[5, 3, 2])[0]
+
+            # هر لایه با اندازه، سرعت و رنگ متفاوت، حس عمق و پارالاکس ایجاد می‌کند.
+            # Each layer uses a different size, speed, and color to create depth and parallax.
             if layer == 0:
                 r = random.uniform(0.6, 1.1)
                 sp = random.uniform(S.FxCfg.STAR_SPEED_MIN, S.FxCfg.STAR_SPEED_MIN * 1.5)
@@ -279,7 +290,13 @@ class MenuScene(Scene):
 
     def _update_stars(self, dt: float) -> None:
         for st in self.stars:
+
+            # جابه‌جایی بر اساس dt باعث می‌شود سرعت حرکت ستاره‌ها به نرخ فریم وابسته نباشد.
+            # Movement based on dt keeps star speed independent of the frame rate.
             st.y += st.speed * dt
+
+            # ستاره پس از خروج از پایین صفحه به بالای آن بازمی‌گردد و موقعیت افقی تازه‌ای می‌گیرد.
+            # Once a star leaves the bottom of the screen, it returns to the top at a new horizontal position.
             if st.y > S.Window.HEIGHT + 4:
                 st.y = -4
                 st.x = random.uniform(0, S.Window.WIDTH)
@@ -292,9 +309,6 @@ class MenuScene(Scene):
                 max(1, int(round(st.radius))),
             )
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رویدادها
-    # ─────────────────────────────────────────────────────────────────────
 
     def handle_event(self, event: pygame.event.Event) -> None:
         # ---- کیبورد ----
@@ -315,13 +329,12 @@ class MenuScene(Scene):
                 break
 
     def _move_selection(self, delta: int) -> None:
+        # گزینه فعلی غیرفعال می‌شود و انتخاب جدید با استفاده از پیمانه در محدوده دکمه‌ها باقی می‌ماند.
+        # The current option is deselected, and modulo arithmetic keeps the new selection within the button list.
         self.buttons[self.selected_idx].selected = False
         self.selected_idx = (self.selected_idx + delta) % len(self.buttons)
         self.buttons[self.selected_idx].selected = True
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  به‌روزرسانی
-    # ─────────────────────────────────────────────────────────────────────
 
     def update(self, dt: float) -> None:
         self._t += dt
@@ -330,15 +343,14 @@ class MenuScene(Scene):
         mouse_pos = pygame.mouse.get_pos()
         for i, b in enumerate(self.buttons):
             b.update(dt, mouse_pos)
+
             # اگر ماوس روی دکمه‌ای رفت، آن را انتخاب کن
+            # Select a button when the mouse pointer moves over it.
             if b.hovered and i != self.selected_idx:
                 self.buttons[self.selected_idx].selected = False
                 self.selected_idx = i
                 b.selected = True
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رندر
-    # ─────────────────────────────────────────────────────────────────────
 
     def draw(self, surface: pygame.Surface) -> None:
         # ---- پس‌زمینه ----
@@ -357,6 +369,9 @@ class MenuScene(Scene):
     # ── افکت سحابی: دو هاله‌ی رنگی ملایم که آرام حرکت می‌کنند ──
     def _draw_nebula(self, surface: pygame.Surface) -> None:
         w, h = S.Window.WIDTH, S.Window.HEIGHT
+
+        # مختصات هر هاله با توابع سینوسی تغییر می‌کند تا حرکت آن‌ها نرم و پیوسته باشد.
+        # Each halo's position changes sinusoidally to produce smooth, continuous movement.
         # دو هاله با حرکت نرم سینوسی
         cx1 = w * 0.30 + math.sin(self._t * 0.18) * 40
         cy1 = h * 0.35 + math.cos(self._t * 0.22) * 30
@@ -368,9 +383,15 @@ class MenuScene(Scene):
             (cx2, cy2, (60, 20, 80), 220),
         ):
             surf = pygame.Surface((base_r * 2, base_r * 2), pygame.SRCALPHA)
+
+            # رسم دایره‌های تو‌در‌تو با آلفای متغیر، هاله‌ای نرم و بدون مرز مشخص می‌سازد.
+            # Drawing concentric circles with varying alpha creates a soft, borderless glow.
             for r in range(base_r, 0, -12):
                 a = int(4 + 5 * (1 - r / base_r))
                 pygame.draw.circle(surf, (*color, a), (base_r, base_r), r)
+
+            # ترکیب افزایشی رنگ‌ها، نور هاله را با رنگ‌های موجود پس‌زمینه ادغام می‌کند.
+            # Additive blending combines the halo's light with the existing background colors.
             surface.blit(surf, (cx - base_r, cy - base_r),
                          special_flags=pygame.BLEND_RGBA_ADD)
 
@@ -380,6 +401,8 @@ class MenuScene(Scene):
         cy = 130
 
         # ---- پالس ----
+        # تغییر سینوسی مقیاس عنوان، انیمیشن ضربان ملایمی ایجاد می‌کند.
+        # Sinusoidal scaling creates a subtle pulsing animation for the title.
         pulse = 1.0 + 0.04 * math.sin(self._t * 2.4)
 
         # ---- متن اصلی ----
@@ -390,6 +413,8 @@ class MenuScene(Scene):
         rect = img_scaled.get_rect(center=(cx, cy))
 
         # ---- هاله (کم‌تر از قبل، تمیزتر) ----
+        # سه لایه با اندازه‌های متفاوت، درخشش اطراف عنوان را ایجاد می‌کنند.
+        # Three layers with different sizes create a glow around the title.
         for layer in range(3, 0, -1):
             glow_img = pygame.transform.smoothscale(
                 img, (w + layer * 8, h + layer * 8)
@@ -416,6 +441,9 @@ class MenuScene(Scene):
         # ---- خط تزئینی: با فاصله‌ی مناسب ----
         line_w = 360
         line_y = sub_y + 36
+
+        # شفافیت خط در مرکز بیشترین مقدار و در دو انتهای آن به صفر می‌رسد.
+        # The line's opacity peaks at the center and fades to zero at both ends.
         for i in range(line_w):
             t = i / line_w
             a = int(180 * math.sin(math.pi * t))
@@ -437,9 +465,6 @@ class MenuScene(Scene):
         ver_rect.bottomright = (S.Window.WIDTH - 12, S.Window.HEIGHT - 10)
         surface.blit(ver, ver_rect)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  اکشن‌ها
-    # ─────────────────────────────────────────────────────────────────────
 
     def _start_game(self) -> None:
         self.go_to(S.SceneName.GAMEPLAY.value)

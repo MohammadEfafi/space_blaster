@@ -45,10 +45,8 @@ if TYPE_CHECKING:
     from scenes.gameplay import GameplayScene
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  نگاشت شناسه → کلاس
-# ═══════════════════════════════════════════════════════════════════════════
-
+# نگاشت شناسه‌ی هر سفینه به کلاس سازنده‌ی آن؛ مبنای ساخت نمونه‌ها در بازی.
+# Maps each ship identifier to its class, providing the source for instance creation.
 SHIP_CLASSES: dict[str, type[Player]] = {
     "interceptor": Interceptor,
     "vanguard":    Vanguard,
@@ -57,10 +55,8 @@ SHIP_CLASSES: dict[str, type[Player]] = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ترتیب نمایش در صفحه‌ی انتخاب
-# ═══════════════════════════════════════════════════════════════════════════
-
+# ترتیب نمایش سفینه‌ها در رابط انتخاب؛ مستقل از ترتیب تعریف کلاس‌ها و اطلاعات آن‌ها.
+# Defines the display order of ships in the selection UI, independently of their class and info definitions.
 SHIP_LIST: list[str] = [
     "interceptor",
     "vanguard",
@@ -68,10 +64,6 @@ SHIP_LIST: list[str] = [
     "devastator",
 ]
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  اطلاعات نمایشی هر سفینه
-# ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass(frozen=True, slots=True)
 class ShipInfo:
@@ -106,6 +98,8 @@ class ShipInfo:
     difficulty:  str
 
 
+# اطلاعات مخصوص نمایش هر سفینه؛ این مقادیر برای رابط کاربری هستند و لزوماً آمار واقعی مبارزه نیستند.
+# Stores display-specific information for each ship; these values are for the UI and do not necessarily represent actual combat stats.
 SHIP_INFO: dict[str, ShipInfo] = {
     "interceptor": ShipInfo(
         key="interceptor",
@@ -166,10 +160,8 @@ SHIP_INFO: dict[str, ShipInfo] = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  API عمومی
-# ═══════════════════════════════════════════════════════════════════════════
-
+# شناسه‌ی سفینه‌ای که در صورت نامعتبر بودن کلید ورودی، به‌عنوان گزینه‌ی جایگزین استفاده می‌شود.
+# Identifies the fallback ship used when the requested key is invalid.
 DEFAULT_SHIP_KEY: str = "phantom"
 
 
@@ -186,38 +178,68 @@ def build_ship(
 
     در صورت نبود شناسه، از سفینه‌ی پیش‌فرض استفاده می‌شود.
     """
+    # کلاس متناظر با شناسه‌ی ورودی را از رجیستری دریافت می‌کند.
+    # Retrieves the class associated with the requested identifier from the registry.
     cls = SHIP_CLASSES.get(key)
+
+    # اگر شناسه در رجیستری وجود نداشته باشد، کلاس سفینه‌ی پیش‌فرض انتخاب می‌شود.
+    # Falls back to the default ship class if the requested identifier is not registered.
     if cls is None:
         cls = SHIP_CLASSES[DEFAULT_SHIP_KEY]
+
+    # نمونه‌ی سفینه را با ارجاع اختیاری به صحنه‌ی بازی ایجاد می‌کند.
+    # Instantiates the selected ship, passing the optional gameplay scene reference.
     return cls(scene)
 
 
 def get_info(key: str) -> ShipInfo:
     """اطلاعات نمایشی سفینه. اگر پیدا نشد، پیش‌فرض برمی‌گرداند."""
+    # اطلاعات نمایشی سفینه را بر اساس شناسه جست‌وجو می‌کند.
+    # Looks up the ship's display information using its identifier.
     info = SHIP_INFO.get(key)
+
+    # در صورت نبود اطلاعات برای شناسه‌ی ورودی، اطلاعات سفینه‌ی پیش‌فرض را برمی‌گرداند.
+    # Returns the default ship's display information when the requested key is not found.
     if info is None:
         info = SHIP_INFO[DEFAULT_SHIP_KEY]
+
     return info
 
 
 def next_ship_key(current_key: str) -> str:
     """شناسه‌ی سفینه‌ی بعدی در ترتیب نمایش."""
     try:
+        # موقعیت سفینه‌ی فعلی را در ترتیب نمایش پیدا می‌کند.
+        # Finds the current ship's position in the display order.
         idx = SHIP_LIST.index(current_key)
     except ValueError:
+        # اگر شناسه در فهرست نباشد، حرکت از ابتدای فهرست آغاز می‌شود.
+        # Starts from the beginning of the list if the identifier is not present.
         idx = 0
+
+    # با پیمایش پیمانه‌ای، پس از آخرین سفینه دوباره به ابتدای فهرست می‌رسد.
+    # Uses modulo indexing to wrap from the last ship back to the beginning.
     return SHIP_LIST[(idx + 1) % len(SHIP_LIST)]
 
 
 def prev_ship_key(current_key: str) -> str:
     """شناسه‌ی سفینه‌ی قبلی در ترتیب نمایش."""
     try:
+        # موقعیت سفینه‌ی فعلی را در ترتیب نمایش پیدا می‌کند.
+        # Finds the current ship's position in the display order.
         idx = SHIP_LIST.index(current_key)
     except ValueError:
+        # اگر شناسه در فهرست نباشد، موقعیت اولیه به‌عنوان نقطه‌ی شروع در نظر گرفته می‌شود.
+        # Uses the initial position as the starting point if the identifier is not present.
         idx = 0
+
+    # با پیمایش پیمانه‌ای، حرکت به عقب از ابتدای فهرست به آخرین سفینه می‌رسد.
+    # Uses modulo indexing to wrap backward from the first ship to the last one.
     return SHIP_LIST[(idx - 1) % len(SHIP_LIST)]
 
 
+# نمادهای عمومی ماژول را مشخص می‌کند تا فقط رابط موردنظر از بیرون در دسترس باشد.
+# Defines the module's public interface, exposing only the intended symbols to external imports.
 __all__ = [
     "SHIP_CLASSES",
     "SHIP_LIST",

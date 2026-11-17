@@ -1,4 +1,8 @@
 """
+
+entities/enemies/sentinel.py
+==========================
+
 SENTINEL — تک‌تیرانداز سنگین (نسخه‌ی نهایی).
 
 ظاهر: برج تک‌تیرانداز sci-fi با ۴ پای تلسکوپی، چشم شیطانی که بازیکن
@@ -33,6 +37,8 @@ class SentinelEnemy(Enemy):
     AIM_TIME = 1.5
 
     def _configure(self) -> None:
+        # وضعیت حرکت، نشانه‌گیری و انیمیشن اجزای ظاهری دشمن را مقداردهی اولیه می‌کند.
+        # Initializes the enemy's movement, aiming, and visual animation states.
         self._stopped = False
         self._aim_timer = 0.0
         self._aiming = False
@@ -42,10 +48,14 @@ class SentinelEnemy(Enemy):
         self._leg_phases = [0.0, 0.0, 0.0, 0.0]
 
     def update_ai(self, dt: float) -> None:
+        # زمان انیمیشن‌های ضربانی و حرکت پاها را با زمان هر فریم به‌روزرسانی می‌کند.
+        # Advances the pulsing animation and leg movement using the frame delta time.
         self._pulse += dt
         for i in range(4):
             self._leg_phases[i] += dt
 
+        # دشمن ابتدا به سمت پایین حرکت می‌کند و پس از رسیدن به ارتفاع مشخص متوقف می‌شود.
+        # Moves the enemy downward until it reaches its designated stopping height.
         if not self._stopped:
             self.y += self.SPEED * dt
             if self.y >= self.STOP_Y:
@@ -60,6 +70,8 @@ class SentinelEnemy(Enemy):
             dy = player.y - self.y
             d = math.hypot(dx, dy) or 1.0
             target = (dx / d, dy / d)
+            # تغییر جهت چشم به‌صورت تدریجی انجام می‌شود تا حرکت آن ناگهانی نباشد.
+            # Smoothly interpolates the eye direction to avoid abrupt visual movement.
             blend = min(1.0, dt * 5.0)
             self._eye_look = (
                 self._eye_look[0] + (target[0] - self._eye_look[0]) * blend,
@@ -69,6 +81,8 @@ class SentinelEnemy(Enemy):
         # ---- نشانه‌گیری ----
         if self._aiming:
             self._aim_timer -= dt
+            # تا پایان زمان نشانه‌گیری، موقعیت بازیکن به‌عنوان هدف ثبت می‌شود.
+            # Updates the target position while the aiming countdown is active.
             if player and player.alive:
                 self._aim_target = (player.x, player.y)
             if self._aim_timer <= 0:
@@ -76,20 +90,28 @@ class SentinelEnemy(Enemy):
                 self._aiming = False
 
     def _do_shoot(self) -> list:
+        # تا پیش از توقف دشمن یا هنگام نشانه‌گیری، شلیک جدیدی آغاز نمی‌شود.
+        # Prevents a new aiming sequence while moving or already aiming.
         if not self._stopped or self._aiming:
             return []
         player = getattr(self.scene, "player", None) if self.scene else None
         if player and player.alive:
             self._aim_target = (player.x, player.y)
+        # شلیک را به‌صورت تأخیری آغاز می‌کند تا بازیکن فرصت واکنش به نشانه‌گیری را داشته باشد.
+        # Starts a delayed shot, giving the player time to react to the aiming sequence.
         self._aiming = True
         self._aim_timer = self.AIM_TIME
         return []
 
     def _fire_aimed_shot(self) -> None:
+        # بدون دسترسی به صحنه، امکان ایجاد گلوله و اجرای جلوه‌های شلیک وجود ندارد.
+        # Cannot create a bullet or trigger shooting effects without an active scene.
         if self.scene is None:
             return
         dx = self._aim_target[0] - self.x
         dy = self._aim_target[1] - self.y
+        # بردار جهت هدف را نرمال می‌کند تا سرعت گلوله در تمام جهت‌ها یکسان باشد.
+        # Normalizes the target direction so bullet speed remains consistent in every direction.
         d = math.hypot(dx, dy) or 1.0
         vx = (dx / d) * self.BULLET_SPEED
         vy = (dy / d) * self.BULLET_SPEED
@@ -99,22 +121,28 @@ class SentinelEnemy(Enemy):
                 vx, vy,
                 friendly=False, kind=BulletKind.ENEMY, scene=self.scene,
             )
+            # گلوله‌ی سنگین Sentinel نسبت به گلوله‌های معمولی اندازه و آسیب بیشتری دارد.
+            # Gives the Sentinel's heavy projectile increased size and damage.
             b.radius = 10
             b.damage = 2
             self.scene.spawn_bullet(b)
             self.scene.audio.play("enemy_shoot")
             self.scene.camera.shake(5.0)
         except Exception:
+            # خطاهای احتمالی ایجاد گلوله یا اجرای جلوه‌های شلیک را از انتشار بازمی‌دارد.
+            # Prevents errors during bullet creation or shooting effects from propagating.
             pass
 
-    # ═════════════════════════════════════════════════════════════════════
-    #  رسم — برج تک‌تیرانداز
-    # ═════════════════════════════════════════════════════════════════════
+
 
     def draw_body(self, surface: pygame.Surface, alpha: int = 255) -> None:
+        # ابعاد و مختصات مرکزی اجزای بدنه را بر اساس شعاع دشمن محاسبه می‌کند.
+        # Calculates the body dimensions and component positions from the enemy's radius.
         r = int(self.radius * 1.2)
         cx, cy = int(self.x), int(self.y)
 
+        # رنگ‌های پایه، سایه و درخشش را با توجه به رنگ فعلی دشمن تعیین می‌کند.
+        # Derives the base, shadow, and highlight colors from the enemy's current tint.
         base = self.tint(self.BODY_COLOR)
         dark = self._darker(base, 110)
         darker = self._darker(base, 170)
@@ -124,6 +152,8 @@ class SentinelEnemy(Enemy):
         # ---- ۱. Laser Sight ----
         if self._aiming:
             tx, ty = self._aim_target
+            # میزان پیشرفت نشانه‌گیری و شدت ضربان نور لیزر را محاسبه می‌کند.
+            # Calculates the aiming progress and laser pulse intensity.
             progress = 1.0 - (self._aim_timer / self.AIM_TIME)
             pulse = 0.5 + 0.5 * math.sin(self._aim_timer * 25)
 
@@ -133,6 +163,8 @@ class SentinelEnemy(Enemy):
             dx = tx - cx
             dy = ty - cy
             d = math.hypot(dx, dy) or 1.0
+            # خط نشانه‌گیری را از مرکز دشمن تا فاصله‌ای فراتر از محدوده‌ی صفحه امتداد می‌دهد.
+            # Extends the aiming laser from the enemy toward a point beyond the screen boundaries.
             ex = cx + (dx / d) * 2000
             ey = cy + (dy / d) * 2000
             tmp = pygame.Surface((abs(int(ex - cx)) + 20, abs(int(ey - cy)) + 20), pygame.SRCALPHA)
@@ -146,6 +178,8 @@ class SentinelEnemy(Enemy):
 
             # دایره‌ی هدف
             target_r = int(18 + 12 * pulse)
+            # حلقه‌های تو در تو، نشانگر هدف را با شفافیت تدریجی ایجاد می‌کنند.
+            # Creates the target indicator using concentric rings with gradually changing opacity.
             for rr in range(target_r, 0, -2):
                 a = int(200 * (1 - rr / target_r) * pulse)
                 if a > 0:
@@ -155,6 +189,8 @@ class SentinelEnemy(Enemy):
                                  special_flags=pygame.BLEND_RGBA_ADD)
 
         # ---- ۲. سایه‌ی زیر ----
+        # سایه‌ی بیضی‌شکل زیر دشمن، عمق بصری بدنه را بیشتر می‌کند.
+        # Adds visual depth by rendering an elliptical shadow beneath the enemy.
         sw, sh = int(r * 1.3), int(r * 0.4)
         shadow = pygame.Surface((sw * 2, sh * 2), pygame.SRCALPHA)
         for rr in range(sh, 0, -1):
@@ -165,8 +201,12 @@ class SentinelEnemy(Enemy):
         surface.blit(shadow, (cx - sw, cy + int(r * 0.55) - sh))
 
         # ---- ۳. ۴ پای تلسکوپی (زاویه‌ای) ----
+        # چهار پا با زاویه‌های مساوی پیرامون بدنه قرار می‌گیرند.
+        # Positions four legs at evenly spaced angles around the body.
         for i in range(4):
             angle = math.pi / 4 + i * math.pi / 2
+            # موج سینوسی، حرکت ظریف مفصل‌ها و نوک پاها را ایجاد می‌کند.
+            # Uses a sine wave to create subtle movement in the leg joints and tips.
             wave = math.sin(self._leg_phases[i] * 2) * 3
 
             base_x = cx + math.cos(angle) * r * 0.5
@@ -204,6 +244,8 @@ class SentinelEnemy(Enemy):
             (cx + int(r * 0.55), cy - int(r * 0.6)),
             (cx + int(r * 0.6), cy + int(r * 0.4)),
         ]
+        # لایه‌ی بیرونی کمی پایین‌تر رسم می‌شود تا جلوه‌ی سایه و برجستگی ایجاد شود.
+        # Draws the outer layer slightly lower to create a shadow and raised-body effect.
         pygame.draw.polygon(surface, darker, [(x, y + 3) for x, y in tower_outer])
 
         # لایه‌ی میانی
@@ -218,6 +260,8 @@ class SentinelEnemy(Enemy):
         pygame.draw.polygon(surface, base, tower_mid)
 
         # خطوط زره‌ای
+        # خطوط افقی، سطح برج را به بخش‌های زرهی مجزا تقسیم می‌کنند.
+        # Horizontal lines divide the tower surface into distinct armor sections.
         for i in range(3):
             y_line = cy - int(r * 0.5) + i * int(r * 0.3)
             pygame.draw.line(surface, darker,
@@ -225,6 +269,8 @@ class SentinelEnemy(Enemy):
                              (cx + int(r * 0.45), y_line), 2)
 
         # خطوط کناری (لبه‌ی نئونی)
+        # دورخط روشن، مرز بدنه‌ی اصلی برج را مشخص می‌کند.
+        # The bright outline defines the edges of the tower's main body.
         pygame.draw.polygon(surface, bright, tower_mid, 2)
 
         # ---- ۵. کابین و چشم شیطانی ----
@@ -232,6 +278,8 @@ class SentinelEnemy(Enemy):
         cab_r = max(6, int(r * 0.32))
 
         # هاله‌ی چشم
+        # هاله‌ی نور با ترکیب افزایشی، درخشش چشم را در اطراف کابین پخش می‌کند.
+        # Additive blending spreads the eye's glow around the cabin.
         glow_r = cab_r * 4
         glow = pygame.Surface((glow_r * 2, glow_r * 2), pygame.SRCALPHA)
         for rr in range(glow_r, 0, -2):
@@ -247,12 +295,16 @@ class SentinelEnemy(Enemy):
         pygame.draw.circle(surface, bright, (cx, cab_y), cab_r, 2)
 
         # چشم (با نگاه)
+        # موقعیت مردمک با بردار نگاه محاسبه‌شده در منطق هوش مصنوعی جابه‌جا می‌شود.
+        # Moves the pupil according to the look direction calculated by the enemy AI.
         eye_x = cx + int(self._eye_look[0] * cab_r * 0.3)
         eye_y = cab_y + int(self._eye_look[1] * cab_r * 0.3)
         pygame.draw.circle(surface, eye_color, (eye_x, eye_y), max(3, cab_r - 3))
         pygame.draw.circle(surface, (255, 255, 255), (eye_x, eye_y), max(1, cab_r // 2))
 
         # ---- ۶. لوله‌ی اسلحه (بلند، پایین) ----
+        # لوله در بخش پایینی برج قرار دارد و با چند لایه‌ی رنگی عمق پیدا می‌کند.
+        # Places the barrel below the tower and adds depth through multiple color layers.
         barrel_y = cy + int(r * 0.3)
         barrel_w = int(r * 0.15)
         barrel_h = int(r * 0.55)
@@ -270,6 +322,8 @@ class SentinelEnemy(Enemy):
                              (cx - barrel_w, ly), (cx + barrel_w, ly), 1)
 
         # دهانه‌ی درخشان
+        # درخشش دهانه با حلقه‌های شفاف و ترکیب افزایشی ساخته می‌شود.
+        # Builds the muzzle glow using translucent rings and additive blending.
         tip_y = barrel_y + barrel_h
         for rr in range(10, 0, -2):
             a = int(180 * (1 - rr / 10))
@@ -283,6 +337,8 @@ class SentinelEnemy(Enemy):
 
         # ---- ۷. اتصالات انرژی (خطوط درخشان روی برج) ----
         if self._stopped:
+            # شدت نور اتصالات انرژی با یک موج سینوسی به‌صورت پیوسته تغییر می‌کند.
+            # Modulates the energy connections' brightness continuously with a sine wave.
             pulse = 0.5 + 0.5 * math.sin(self._pulse * 4)
             a = int(180 * pulse)
             if a > 0:
@@ -299,6 +355,8 @@ class SentinelEnemy(Enemy):
 
         # ---- ۸. نشانگر شارژ ----
         if self._aiming:
+            # نوار بالای دشمن، میزان پیشرفت زمان نشانه‌گیری تا شلیک را نمایش می‌دهد.
+            # The bar above the enemy displays aiming progress until the shot is fired.
             progress = 1.0 - (self._aim_timer / self.AIM_TIME)
             bar_w = int(r * 1.4)
             bar_h = 5
@@ -315,6 +373,8 @@ class SentinelEnemy(Enemy):
 
         # ---- ۹. نوار HP ----
         if self.hp < self.max_hp:
+            # نوار سلامتی فقط پس از دریافت آسیب نمایش داده می‌شود.
+            # Displays the health bar only after the enemy has taken damage.
             w = int(r * 1.8)
             h = 5
             x = cx - w // 2
@@ -323,6 +383,8 @@ class SentinelEnemy(Enemy):
             bg.fill((0, 0, 0, 220))
             surface.blit(bg, (x - 2, y - 2))
             ratio = max(0.0, self.hp / self.max_hp)
+            # رنگ نوار بر اساس نسبت سلامتی باقی‌مانده تغییر می‌کند.
+            # Changes the bar color according to the remaining health ratio.
             color = (80, 255, 140) if ratio > 0.5 else (255, 220, 60) if ratio > 0.25 else (255, 60, 60)
             pygame.draw.rect(surface, color, (x, y, int(w * ratio), h))
             pygame.draw.rect(surface, (255, 255, 255), (x, y, w, h), 1)

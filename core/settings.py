@@ -4,14 +4,6 @@ core/settings.py
 
 مرکز تنظیمات پروژه‌ی SPACE BLASTER.
 
-تمام ثابت‌های بازی (ابعاد پنجره، رنگ‌ها، سرعت‌ها، مسیرها، پیکربندی دشمن‌ها و …)
-فقط و فقط در همین فایل تعریف می‌شوند. هیچ عدد جادویی (magic number) نباید در
-جای دیگری از پروژه ظاهر شود — این قاعده، بالانس کردن بازی را از یک کابوس به
-یک تجربه‌ی لذت‌بخش تبدیل می‌کند.
-
-نکته‌ی مهم:
-    این فایل هیچ وابستگی داخلی به بقیه‌ی ماژول‌ها ندارد و می‌تواند
-    از هر جای پروژه با خیال راحت import شود.
 """
 
 from __future__ import annotations
@@ -23,16 +15,10 @@ from typing import Final
 import pygame
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ①  مسیرهای پروژه (Paths)
-# ═══════════════════════════════════════════════════════════════════════════
-#  از pathlib استفاده می‌کنیم تا مسیرها روی ویندوز/مک/لینوکس یکسان کار کنند.
-#  ROOT_DIR از روی محل همین فایل محاسبه می‌شود، پس هرجای دیسک هم که پروژه
-#  کپی شود، همه چیز خودکار درست می‌ماند.
-# ═══════════════════════════════════════════════════════════════════════════
-
 import sys
 
+# در نسخه‌ی اجرایی بسته‌بندی‌شده، مسیر منابع از پوشه‌ی موقت استخراج‌شده توسط PyInstaller خوانده می‌شود.
+# In the packaged executable, resource paths are resolved from the temporary directory extracted by PyInstaller.
 if getattr(sys, "frozen", False):
     RESOURCE_ROOT = Path(sys._MEIPASS)
     SAVE_ROOT     = Path(sys.executable).parent
@@ -40,6 +26,8 @@ else:
     RESOURCE_ROOT = Path(__file__).resolve().parent.parent
     SAVE_ROOT     = RESOURCE_ROOT
 
+# مسیرهای اصلی منابع و داده‌های بازی از یک ریشه‌ی مشترک ساخته می‌شوند.
+# Main resource and data paths are derived from a shared root directory.
 ROOT_DIR:  Final[Path] = RESOURCE_ROOT
 DATA_DIR:  Final[Path] = RESOURCE_ROOT / "data"
 IMG_DIR:   Final[Path] = DATA_DIR / "images"
@@ -49,10 +37,8 @@ LEVEL_DIR: Final[Path] = DATA_DIR / "levels"
 SAVE_DIR:  Final[Path] = SAVE_ROOT / "saves"
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ②  پنجره و حلقه‌ی اصلی (Window & Loop)
-# ═══════════════════════════════════════════════════════════════════════════
-
+# تنظیمات پنجره و نرخ اجرای حلقه‌ی اصلی بازی.
+# Window configuration and the target frame rate for the main game loop.
 class Window:
     TITLE:     Final[str]  = "SPACE BLASTER"
     WIDTH:     int = 1920
@@ -61,21 +47,17 @@ class Window:
     VSYNC:     Final[int]  = 1
     RESIZABLE: Final[bool] = True
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ③  پالت رنگ (Palette)
-# ═══════════════════════════════════════════════════════════════════════════
-#  تمام رنگ‌ها به صورت tuple[int, int, int] ذخیره می‌شوند تا مستقیماً به
-#  pygame قابل پاس دادن باشند. اگر خواستی تم بازی را عوض کنی، فقط همین‌جاست.
-# ═══════════════════════════════════════════════════════════════════════════
 
 class Palette:
     # ---- پس‌زمینه ----
+    # ---- Background ----
     BG_DEEP:   Final[tuple[int, int, int]] = (5, 8, 20)
     BG_MID:    Final[tuple[int, int, int]] = (12, 18, 38)
     STAR_NEAR: Final[tuple[int, int, int]] = (200, 210, 255)
     STAR_FAR:  Final[tuple[int, int, int]] = (90, 90, 130)
 
     # ---- رنگ‌های پایه ----
+    # ---- Base colors ----
     WHITE:  Final[tuple[int, int, int]] = (255, 255, 255)
     BLACK:  Final[tuple[int, int, int]] = (0, 0, 0)
     GREY:   Final[tuple[int, int, int]] = (140, 140, 160)
@@ -88,32 +70,38 @@ class Palette:
     PINK:   Final[tuple[int, int, int]] = (255, 90, 200)
 
     # ---- پلیر ----
+    # ---- Player ----
     PLAYER_BODY:        Final[tuple[int, int, int]] = (60, 220, 255)
     PLAYER_HULL:        Final[tuple[int, int, int]] = (235, 245, 255)
     PLAYER_FLAME:       Final[tuple[int, int, int]] = (255, 150, 40)
     PLAYER_FLAME_INNER: Final[tuple[int, int, int]] = (255, 240, 120)
 
     # ---- گلوله‌ها ----
+    # ---- Bullets ----
     BULLET_PLAYER: Final[tuple[int, int, int]] = (120, 240, 255)
     BULLET_ENEMY:  Final[tuple[int, int, int]] = (255, 90, 90)
     BULLET_BOSS:   Final[tuple[int, int, int]] = (255, 40, 120)
 
     # ---- دشمن‌ها ----
+    # ---- Enemies ----
     ENEMY_NORMAL: Final[tuple[int, int, int]] = (255, 90, 90)
     ENEMY_TANK:   Final[tuple[int, int, int]] = (190, 90, 255)
     ENEMY_SPIRAL: Final[tuple[int, int, int]] = (80, 255, 140)
     ENEMY_BOSS:   Final[tuple[int, int, int]] = (255, 60, 160)
 
     # ---- افکت انفجار ----
+    # ---- Explosion effects ----
     EXPLOSION_HOT:  Final[tuple[int, int, int]] = (255, 240, 160)
     EXPLOSION_MID:  Final[tuple[int, int, int]] = (255, 150, 40)
     EXPLOSION_COOL: Final[tuple[int, int, int]] = (255, 60, 60)
 
     # ---- پاورآپ ----
+    # ---- Power-ups ----
     POWERUP_CORE: Final[tuple[int, int, int]] = (255, 220, 60)
     POWERUP_GLOW: Final[tuple[int, int, int]] = (255, 150, 40)
 
     # ---- رابط کاربری (HUD) ----
+    # ---- User interface (HUD) ----
     HUD_TEXT:   Final[tuple[int, int, int]] = (235, 240, 255)
     HUD_ACCENT: Final[tuple[int, int, int]] = (60, 220, 255)
     HUD_WARN:   Final[tuple[int, int, int]] = (255, 90, 90)
@@ -122,10 +110,8 @@ class Palette:
     MENU_HINT:  Final[tuple[int, int, int]] = (200, 220, 255)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ④  فونت‌ها (Fonts)
-# ═══════════════════════════════════════════════════════════════════════════
-
+# تنظیمات مشترک خانواده‌ی فونت و اندازه‌های مورد استفاده در رابط کاربری.
+# Shared font family and standard sizes used throughout the user interface.
 class FontCfg:
     """نام خانواده و اندازه‌های استاندارد فونت."""
     FAMILY: Final[str] = "bahnschrift"   # بعداً می‌توانی فایل .ttf بدهی
@@ -137,10 +123,8 @@ class FontCfg:
     HUGE:   Final[int] = 72
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ⑤  پیکربندی پلیر (Player)
-# ═══════════════════════════════════════════════════════════════════════════
-
+# مقادیر پایه‌ی مربوط به حرکت، برخورد، سلامتی و شلیک بازیکن.
+# Base values for player movement, collision, health, and shooting.
 class PlayerCfg:
     SPEED:        Final[float] = 340.0   # پیکسل بر ثانیه
     RADIUS:       Final[int]   = 20      # شعاع هیت‌باکس
@@ -152,14 +136,8 @@ class PlayerCfg:
     RESPAWN_Y:    Final[int]   = 90      # فاصله از پایین صفحه برای ظاهر شدن
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ⑥  پیکربندی دشمن‌ها (Enemies)
-# ═══════════════════════════════════════════════════════════════════════════
-#  هر نوع دشمن یک کلاس تودرتو دارد. این ساختار افزودن دشمن جدید را
-#  بسیار ساده می‌کند: کافی‌ست یک کلاس تازه اینجا اضافه شود و از آن در
-#  entities/enemies/ ارث‌بری شود.
-# ═══════════════════════════════════════════════════════════════════════════
-
+# تنظیمات دشمنان بر اساس نوع؛ هر زیرکلاس مقادیر مستقل خود را دارد.
+# Enemy settings are grouped by type, with independent values for each variant.
 class EnemyCfg:
 
     class Normal:
@@ -191,10 +169,8 @@ class EnemyCfg:
         FREQUENCY:   Final[float] = 2.6        # بسامد (رادیان بر ثانیه)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ⑦  موج‌ها و Spawn (Wave Config)
-# ═══════════════════════════════════════════════════════════════════════════
-
+# پارامترهای تولید موج‌ها، افزایش تدریجی دشواری و زمان‌بندی باس‌ها.
+# Parameters for wave generation, progressive difficulty, and boss scheduling.
 class WaveCfg:
     FIRST_ENEMIES: Final[int]   = 4     # تعداد دشمن در موج اول
     GROWTH:        Final[int]   = 1     # افزایش هر موج
@@ -204,13 +180,17 @@ class WaveCfg:
     SPAWN_Y_MAX:   Final[int]   = -40
 
     # وزن انتخاب نوع دشمن بر اساس شماره‌ی موج.
+    # Enemy selection weights based on the current wave number.
     # ترتیب: (ساده، تانک، مارپیچ)
+    # Order: (Normal, Tank, Spiral)
     WEIGHTS_WAVE_1: Final[tuple[int, int, int]] = (10, 0, 0)
     WEIGHTS_WAVE_2: Final[tuple[int, int, int]] = (8, 1, 3)
     WEIGHTS_WAVE_3: Final[tuple[int, int, int]] = (6, 2, 4)
     WEIGHTS_LATE:   Final[tuple[int, int, int]] = (5, 3, 5)
 
 
+    # محدودیت‌ها و فاصله‌های زمانی مربوط به حضور باس‌ها و دشمنان پیشرفته.
+    # Limits and intervals governing boss appearances and advanced enemies.
     BOSS_EVERY:           Final[int] = 5    # هر چند موج یک باس
     BOSS_MIN_WAVE:        Final[int] = 7    # حداقل موج برای اولین باس
     BOSS_OMEGA_MIN_WAVE:  Final[int] = 10   # حداقل موج برای Omega
@@ -220,12 +200,10 @@ class WaveCfg:
     ADVANCED_INTRO_WAVE:  Final[int] = 20   # معرفی دشمن‌های پیشرفته
     ELITE_INTERVAL:       Final[int] = 4    # هر چند موج الیت
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ⑧  افکت‌های بصری (Effects / FX)
-# ═══════════════════════════════════════════════════════════════════════════
 
 class FxCfg:
     # ---- ذرات انفجار ----
+    # ---- Explosion particles ----
     PARTICLE_MIN_LIFE:  Final[float] = 0.28   # ثانیه
     PARTICLE_MAX_LIFE:  Final[float] = 0.85
     PARTICLE_MIN_SPEED: Final[float] = 60.0
@@ -233,6 +211,7 @@ class FxCfg:
     PARTICLE_FRICTION:  Final[float] = 0.92
 
     # ---- لرزش صفحه ----
+    # ---- Screen shake ----
     SHAKE_DECAY:        Final[float] = 0.86
     SHAKE_MIN:          Final[float] = 0.6
     SHAKE_ON_HIT:       Final[float] = 14.0
@@ -240,25 +219,22 @@ class FxCfg:
     SHAKE_ON_BOSS_KILL: Final[float] = 26.0
 
     # ---- ستاره‌های پس‌زمینه ----
+    # ---- Background stars ----
     STAR_COUNT:     Final[int]   = 160
     STAR_SPEED_MIN: Final[float] = 8.0
     STAR_SPEED_MAX: Final[float] = 55.0
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ⑨  پاورآپ‌ها (Powerups)
-# ═══════════════════════════════════════════════════════════════════════════
-
+# پارامترهای مشترک سرعت سقوط، اندازه و مدت اثر پاورآپ‌ها.
+# Shared parameters for power-up falling speed, size, and effect duration.
 class PowerupCfg:
     FALL_SPEED: Final[float] = 95.0
     RADIUS:     Final[int]   = 14
     DURATION:   Final[float] = 8.0    # مدت اثر هر پاورآپ (ثانیه)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ⑩  نام صحنه‌ها (Scene Names)
-# ═══════════════════════════════════════════════════════════════════════════
-
+# نام صحنه‌ها به‌صورت رشته‌ای نوع‌دار تعریف شده تا از مقادیر متنی پراکنده جلوگیری شود.
+# Scene names are defined as a string-based enum to avoid scattered string literals.
 class SceneName(str, Enum):
     """از Enum استفاده می‌کنیم تا از غلط‌املایی و رشته‌های جادویی جلوگیری شود."""
     MENU        = "menu"
@@ -270,13 +246,8 @@ class SceneName(str, Enum):
     LEADERBOARD = "leaderboard"
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ⑪  نقشه‌ی ورودی‌ها (Input Map)
-# ═══════════════════════════════════════════════════════════════════════════
-#  هر دستور یک tuple از کلیدهای جایگزین است. این‌طوری پشتیبانی از WASD و
-#  کلیدهای جهت‌دار همزمان، و بعداً Rebind کردن کلیدها، بسیار ساده می‌شود.
-# ═══════════════════════════════════════════════════════════════════════════
-
+# کلیدهای ورودی هر عمل؛ هر عمل می‌تواند با چند کلید جایگزین فعال شود.
+# Input bindings for each action; an action can be triggered by multiple alternative keys.
 class Keys:
     UP:      Final[tuple[int, ...]] = (pygame.K_w, pygame.K_UP)
     DOWN:    Final[tuple[int, ...]] = (pygame.K_s, pygame.K_DOWN)
@@ -289,10 +260,8 @@ class Keys:
     CONFIRM: Final[tuple[int, ...]] = (pygame.K_RETURN, pygame.K_SPACE)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ⑫  پرچم‌های دیباگ (Debug Flags)
-# ═══════════════════════════════════════════════════════════════════════════
-
+# گزینه‌های توسعه و اشکال‌زدایی که می‌توانند هنگام اجرای بازی فعال یا غیرفعال شوند.
+# Development and debugging options that can be enabled or disabled during gameplay.
 class Debug:
     SHOW_FPS:     bool = True    
     GOD_MODE:     bool = False
@@ -300,6 +269,8 @@ class Debug:
     LOG_EVENTS:   bool = False
 
 
+# نمادهای عمومی ماژول برای import صریح با الگوی ستاره‌ای.
+# Public module symbols for explicit wildcard imports.
 __all__ = [
     "ROOT_DIR", "DATA_DIR", "IMG_DIR", "SOUND_DIR", "FONT_DIR",
     "LEVEL_DIR", "SAVE_DIR",

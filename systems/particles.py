@@ -38,9 +38,6 @@ import pygame
 from core import settings as S
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  انواع ذره
-# ═══════════════════════════════════════════════════════════════════════════
 
 class ParticleKind(Enum):
     """دسته‌بندی ذرات برای رفتار بصری متفاوت."""
@@ -52,9 +49,6 @@ class ParticleKind(Enum):
     RING   = auto()   # حلقه‌ی گسترده‌شونده
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  ساختار داده‌ی ذره
-# ═══════════════════════════════════════════════════════════════════════════
 
 @dataclass
 class Particle:
@@ -101,14 +95,15 @@ class Particle:
     # فیلد پویا
     _turb_phase: float = field(default_factory=lambda: random.uniform(0, math.tau))
 
-    # ─────────────────────────────────────────────────────────────────
-    #  کمکی‌ها
-    # ─────────────────────────────────────────────────────────────────
 
+    # سن ذره از اختلاف عمر اولیه و عمر باقی‌مانده به دست می‌آید.
+    # Particle age is calculated from its initial and remaining lifetime.
     @property
     def age(self) -> float:
         return self.max_life - self.life
 
+    # این نسبت برای محاسبه‌ی تدریجی رنگ، شفافیت و اندازه در طول عمر استفاده می‌شود.
+    # This normalized value drives gradual color, opacity, and size changes over the particle's lifetime.
     @property
     def t(self) -> float:
         """نسبت عمر گذشته به عمر کل: 0 → 1."""
@@ -120,10 +115,6 @@ class Particle:
     def alive(self) -> bool:
         return self.life > 0.0
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  کلاس ParticleSystem
-# ═══════════════════════════════════════════════════════════════════════════
 
 class ParticleSystem:
     """
@@ -144,9 +135,6 @@ class ParticleSystem:
         self._additive_batch: list[Particle] = []
         self._normal_batch: list[Particle] = []
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  شمارش
-    # ─────────────────────────────────────────────────────────────────────
 
     def __len__(self) -> int:
         return len(self.particles)
@@ -154,10 +142,9 @@ class ParticleSystem:
     def clear(self) -> None:
         self.particles.clear()
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  مدیریت ظرفیت
-    # ─────────────────────────────────────────────────────────────────────
 
+    # در صورت عبور از سقف ظرفیت، قدیمی‌ترین ذرات از ابتدای لیست حذف می‌شوند.
+    # When capacity is exceeded, the oldest particles are removed from the beginning of the list.
     def _prune_if_needed(self) -> None:
         """
         اگر تعداد ذرات از سقف گذشت، قدیمی‌ترین‌ها را حذف می‌کنیم.
@@ -168,17 +155,13 @@ class ParticleSystem:
             # حذف از ابتدای لیست (قدیمی‌ترها)
             del self.particles[:overflow]
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  افزودن ذره
-    # ─────────────────────────────────────────────────────────────────────
 
     def add(self, p: Particle) -> None:
         self.particles.append(p)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  به‌روزرسانی
-    # ─────────────────────────────────────────────────────────────────────
 
+    # به‌روزرسانی با dt انجام می‌شود تا حرکت و عمر ذرات مستقل از نرخ فریم باشد.
+    # Updating with dt keeps particle motion and lifetime independent of the frame rate.
     def update(self, dt: float) -> None:
         """
         به‌روزرسانی همه‌ی ذرات. ذرات مرده حذف می‌شوند.
@@ -190,6 +173,8 @@ class ParticleSystem:
         while i < n:
             p = particles[i]
             p.life -= dt
+            # عنصر انتهایی جای ذره‌ی مرده را می‌گیرد؛ ترتیب لیست حفظ نمی‌شود، اما حذف در زمان ثابت انجام می‌شود.
+            # The last element replaces the dead particle; list order is not preserved, but removal is constant-time.
             if p.life <= 0.0:
                 # swap with last و کاهش n
                 n -= 1
@@ -198,8 +183,12 @@ class ParticleSystem:
                 continue
 
             # ---- فیزیک ----
+            # جاذبه فقط مؤلفه‌ی عمودی سرعت را در هر گام زمانی تغییر می‌دهد.
+            # Gravity updates only the vertical velocity component on each time step.
             p.vy += p.gravity * dt
 
+            # فاز سینوسی به‌صورت پیوسته جلو می‌رود تا تلاطم حرکت نرم و متغیر ایجاد کند.
+            # The sinusoidal phase advances continuously to produce smooth, varying turbulence.
             if p.turbulence > 0.0:
                 # نویز سینوسی با فرکانس تصادفی
                 p._turb_phase += dt * 6.0
@@ -207,6 +196,8 @@ class ParticleSystem:
                 p.vy += math.cos(p._turb_phase * 1.37) * p.turbulence * dt
 
             # میرایی
+            # توان‌دهی ضریب drag اثر میرایی را با طول گام زمانی سازگار می‌کند.
+            # Exponentiating the drag coefficient makes damping consistent across time-step lengths.
             drag_factor = p.drag ** (dt * 60.0)
             p.vx *= drag_factor
             p.vy *= drag_factor
@@ -219,9 +210,6 @@ class ParticleSystem:
 
             i += 1
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رسم
-    # ─────────────────────────────────────────────────────────────────────
 
     def draw(self, surface: pygame.Surface) -> None:
         """
@@ -230,6 +218,8 @@ class ParticleSystem:
         self._additive_batch.clear()
         self._normal_batch.clear()
 
+        # ذرات بر اساس نوع ترکیب رنگ در دو دسته جدا می‌شوند تا هر دسته با تنظیمات مناسب رسم شود.
+        # Particles are separated by blend mode so each batch can be rendered with the appropriate settings.
         for p in self.particles:
             if p.additive:
                 self._additive_batch.append(p)
@@ -249,9 +239,13 @@ class ParticleSystem:
         batch: list[Particle],
         blend_additive: bool,
     ) -> None:
+        # پرچم ترکیب رنگ فقط برای دسته‌ی additive فعال است؛ دسته‌ی عادی از ترکیب پیش‌فرض استفاده می‌کند.
+        # The additive batch uses the additive blend flag, while the normal batch uses default blending.
         flags = pygame.BLEND_RGBA_ADD if blend_additive else 0
 
         for p in batch:
+            # مقدار نرمال‌شده‌ی عمر، مبنای درون‌یابی ویژگی‌های بصری ذره است.
+            # The normalized lifetime value drives interpolation of the particle's visual properties.
             t = p.t
             # رنگ و آلفا با درون‌یابی خطی
             r = int(p.color_start[0] + (p.color_end[0] - p.color_start[0]) * t)
@@ -303,6 +297,8 @@ class ParticleSystem:
         d = r * 2 + 2
         tmp = pygame.Surface((d, d), pygame.SRCALPHA)
         # حلقه‌ی نرم با آلفای کاهشی
+        # رسم دایره‌های تو در تو با آلفای کمتر در مرکز، ظاهر نرم و محوشونده‌ی دود را می‌سازد.
+        # Drawing nested circles with varying alpha creates the smoke's soft, fading appearance.
         for rr in range(r, 0, -1):
             a = int(color[3] * (1 - rr / r) ** 0.8)
             pygame.draw.circle(tmp, (color[0], color[1], color[2], a), (r + 1, r + 1), rr)
@@ -319,6 +315,8 @@ class ParticleSystem:
         r = max(1, int(size * 2))
         d = r * 2 + 2
         tmp = pygame.Surface((d, d), pygame.SRCALPHA)
+        # گام دوپیکسلی تعداد لایه‌های هاله را کاهش می‌دهد و جلوه‌ی محو را حفظ می‌کند.
+        # A two-pixel step reduces the number of glow layers while retaining the soft falloff.
         for rr in range(r, 0, -2):
             a = int(color[3] * (1 - rr / r) ** 1.6)
             pygame.draw.circle(tmp, (color[0], color[1], color[2], a), (r + 1, r + 1), rr)
@@ -334,6 +332,8 @@ class ParticleSystem:
     ) -> None:
         s = max(1, int(size))
         # مربع چرخان
+        # مختصات چهار گوشه با ماتریس چرخش دوبعدی حول مرکز ذره محاسبه می‌شوند.
+        # The four corner coordinates are transformed with a 2D rotation around the particle center.
         ang = math.radians(angle)
         cs, sn = math.cos(ang), math.sin(ang)
         pts = [
@@ -377,9 +377,6 @@ class ParticleSystem:
         pygame.draw.circle(tmp, color, (r + 2, r + 2), r, width)
         surface.blit(tmp, (cx - r - 2, cy - r - 2), special_flags=flags)
 
-    # ═════════════════════════════════════════════════════════════════════
-    #  الگوهای انتشار (Emitters)
-    # ═════════════════════════════════════════════════════════════════════
 
     def emit_burst(
         self,
@@ -406,10 +403,14 @@ class ParticleSystem:
         انفجار دایره‌ای (یا کمانی) ذرات.
         spread_deg=360 → دایره‌ی کامل، 90 → ربع‌دایره، 30 → مخروط باریک.
         """
+        # زاویه‌ها به رادیان تبدیل می‌شوند، چون توابع مثلثاتی پایتون با رادیان کار می‌کنند.
+        # Angles are converted to radians because Python's trigonometric functions use radians.
         spread = math.radians(spread_deg)
         base_angle = math.radians(angle_deg)
         half = spread / 2.0
 
+        # زاویه‌ی هر ذره به‌صورت تصادفی در بازه‌ی انتشار انتخاب می‌شود تا انفجار یکنواخت نباشد.
+        # Each particle receives a random angle within the spread so the burst is not perfectly uniform.
         for _ in range(count):
             a = base_angle + random.uniform(-half, half)
             sp = random.uniform(speed_min, speed_max)
@@ -471,6 +472,8 @@ class ParticleSystem:
         size: float = 3.0,
     ) -> None:
         """حلقه‌ی کامل ذرات که به بیرون منفجر می‌شوند."""
+        # زاویه‌ها با تقسیم دایره به تعداد ذرات، فاصله‌ی زاویه‌ای یکسانی پیدا می‌کنند.
+        # Dividing the full circle by the particle count gives each particle an equal angular interval.
         for i in range(count):
             a = (i / count) * math.tau
             vx = math.cos(a) * speed
@@ -506,8 +509,12 @@ class ParticleSystem:
         size: float = 3.0,
     ) -> None:
         """پرتابه‌ی خطی از ذرات در جهت مشخص."""
+        # بردار جهت نرمال می‌شود؛ مقدار جایگزین از تقسیم بر صفر برای بردار صفر جلوگیری می‌کند.
+        # The direction vector is normalized; the fallback prevents division by zero for a zero vector.
         d = math.hypot(dx, dy) or 1.0
         ux, uy = dx / d, dy / d
+        # بردار عمود، آفست عرضی ذرات را نسبت به راستای پرتو تعیین می‌کند.
+        # The perpendicular vector determines each particle's lateral offset from the beam direction.
         px, py = -uy, ux   # عمود
 
         for _ in range(count):
@@ -562,9 +569,6 @@ class ParticleSystem:
             ))
         self._prune_if_needed()
 
-    # ═════════════════════════════════════════════════════════════════════
-    #  پریست‌های آماده (Presets)
-    # ═════════════════════════════════════════════════════════════════════
 
     def preset_enemy_explosion(
         self,
@@ -752,6 +756,8 @@ class ParticleSystem:
     def preset_boss_explosion(self, x: float, y: float) -> None:
         """انفجار بزرگ باس — سینمایی."""
         # موج‌های متعدد حلقه‌ای
+        # چند حلقه با شعاع و سرعت افزایشی، حس گسترش موج‌های انفجار باس را ایجاد می‌کنند.
+        # Multiple rings with increasing radius and speed create the expanding shockwave effect of a boss explosion.
         for i, delay in enumerate((0, 0.08, 0.16, 0.24)):
             self.emit_ring(
                 x, y,

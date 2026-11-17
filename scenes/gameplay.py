@@ -21,8 +21,6 @@ scenes/gameplay.py
         spawn_powerup_burst, spawn_powerup,
         add_score, trigger_screen_bomb
 
-این فایل خودش منطق بازی را «تصمیم» نمی‌گیرد؛ فقط هماهنگ می‌کند.
-تمام تصمیم‌ها در entities/ و systems/ گرفته می‌شوند.
 """
 
 from __future__ import annotations
@@ -48,9 +46,6 @@ from entities.player import Player, build_ship
 
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  کلاس GameplayScene
-# ═══════════════════════════════════════════════════════════════════════════
 
 class GameplayScene(Scene):
     """
@@ -63,10 +58,10 @@ class GameplayScene(Scene):
         on_exit()   — پاک‌سازی
     """
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  چرخه‌ی حیات
-    # ─────────────────────────────────────────────────────────────────────
 
+
+    # راه‌اندازی منابع بصری، سیستم‌های بازی، موجودیت‌ها و وضعیت اولیه‌ی مرحله.
+    # Initializes visual resources, game systems, entities, and the initial scene state.
     def on_enter(self) -> None:
         # ---- فونت‌ها ----
         self.font_hud_big   = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.HUGE, bold=True)
@@ -74,6 +69,8 @@ class GameplayScene(Scene):
         self.font_hud_small = pygame.font.SysFont(S.FontCfg.FAMILY, S.FontCfg.SMALL, bold=True)
 
         # ---- سیستم‌ها ----
+        # ساخت و اتصال سیستم‌های دوربین، صدا، ذرات، برخورد و رابط کاربری.
+        # Creates and connects the camera, audio, particle, collision, and user interface systems.
         self.camera     = Camera()
         self.audio      = self._get_audio()
         self.particles  = ParticleSystem(max_particles=2200)
@@ -82,6 +79,8 @@ class GameplayScene(Scene):
         self.hud.set_show_fps(S.Debug.SHOW_FPS)
 
         # ---- موجودیت‌ها ----
+        # ساخت سفینه‌ی انتخاب‌شده و آماده‌سازی فهرست موجودیت‌های فعال بازی.
+        # Builds the selected ship and initializes the collections of active game entities.
         ship_key = getattr(self.game, "selected_ship", "phantom")
         self.player: Player = build_ship(ship_key, self)
         self.enemies: list[Enemy] = []
@@ -89,6 +88,8 @@ class GameplayScene(Scene):
         self.powerups: list[Powerup] = []
 
         # ---- Spawner ----
+        # راه‌اندازی سیستم ایجاد دشمن‌ها و مدیریت روند موج‌های بازی.
+        # Initializes the enemy spawning system and manages the game's wave progression.
         self.spawner = Spawner(
             self,
             spawn_enemy=self.add_enemy,
@@ -97,6 +98,8 @@ class GameplayScene(Scene):
         self.spawner.start()
 
         # ---- وضعیت ----
+        # مقداردهی امتیاز، وضعیت مکث و زمان‌سنج‌های رویدادهای پایانی مرحله.
+        # Initializes the score, pause state, and timers for end-of-game events.
         self.score: int = 0
         self.score_snapshot: int = 0   # برای محاسبه‌ی delta (اختیاری)
         self.paused_internal: bool = False
@@ -105,26 +108,33 @@ class GameplayScene(Scene):
         self.boss_defeated_timer: float = 0.0
 
         # ---- HUD init ----
+        # تنظیم مقادیر اولیه‌ی نوار وضعیت بر اساس مشخصات سفینه و وضعیت شروع مرحله.
+        # Sets the initial HUD values according to the ship's attributes and the starting game state.
         self.hud.set_hp(self.player.hp, self.player.MAX_HP)
         self.hud.set_score(0)
         self.hud.set_wave(0)
 
         # ---- پس‌زمینه‌ی ستاره‌ای (ساده، در همین صحنه) ----
+        # ایجاد ستاره‌های پس‌زمینه برای نمایش حرکت فضایی در صحنه‌ی بازی.
+        # Initializes background stars to create a sense of movement in the game scene.
         self._init_stars()
 
         # ---- موسیقی ----
+        # پخش موسیقی مبارزه به‌صورت تکرارشونده با محوشدن تدریجی موسیقی قبلی.
+        # Plays the battle music in a loop with a gradual transition from the previous track.
         if self.audio:
             self.audio.play_music("music_battle", loop=True, fade_ms=700)
 
+    # توقف صدای شلیک هنگام خروج از صحنه و آزادسازی منابع مرتبط.
+    # Stops the shooting audio bus when leaving the scene and releases related resources.
     def on_exit(self) -> None:
         # آزادسازی منابع
         if self.audio:
             self.audio.stop_bus(Bus.SHOOT, fade_ms=150)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  Audio — اگر Game audio داشته باشد از آن استفاده می‌کند
-    # ─────────────────────────────────────────────────────────────────────
 
+    # دریافت سیستم صوتی مشترک بازی یا ساخت نمونه‌ی جدید در صورت نبود آن.
+    # Retrieves the shared game audio system or creates a new instance if none exists.
     def _get_audio(self) -> Optional[AudioSystem]:
         """
         اگر در Game یک AudioSystem سراسری وجود داشته باشد، استفاده می‌کند.
@@ -139,10 +149,9 @@ class GameplayScene(Scene):
                 audio = None
         return audio
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  ستاره‌های پس‌زمینه
-    # ─────────────────────────────────────────────────────────────────────
 
+    # ایجاد ستاره‌ها با موقعیت، سرعت و اندازه‌ی تصادفی.
+    # Initializes stars with randomized positions, speeds, and sizes.
     def _init_stars(self) -> None:
         self.stars: list[list[float]] = []
         for _ in range(S.FxCfg.STAR_COUNT):
@@ -153,6 +162,8 @@ class GameplayScene(Scene):
                 random.uniform(0.7, 2.4),
             ])
 
+    # به‌روزرسانی موقعیت ستاره‌ها و انتقال ستاره‌های خارج‌شده به بالای صفحه.
+    # Updates star positions and wraps stars that leave the screen back to the top.
     def _update_stars(self, dt: float) -> None:
         for st in self.stars:
             st[1] += st[2] * dt
@@ -160,6 +171,8 @@ class GameplayScene(Scene):
                 st[1] = -2
                 st[0] = random.uniform(0, S.Window.WIDTH)
 
+    # رسم ستاره‌های پس‌زمینه با اندازه و موقعیت فعلی آن‌ها.
+    # Draws background stars using their current positions and sizes.
     def _draw_stars(self, surface: pygame.Surface) -> None:
         for x, y, _, r in self.stars:
             pygame.draw.circle(
@@ -167,10 +180,10 @@ class GameplayScene(Scene):
                 (int(x), int(y)), max(1, int(r)),
             )
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  ورودی‌ها
-    # ─────────────────────────────────────────────────────────────────────
 
+
+    # دریافت ورودی‌های صفحه‌کلید برای مکث، بازگشت به منو و شلیک.
+    # Handles keyboard input for pausing, returning to the menu, and shooting.
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
             # ---- Pause ----
@@ -185,6 +198,8 @@ class GameplayScene(Scene):
             if event.key in S.Keys.SHOOT:
                 self._handle_shoot()
 
+    # اجرای شلیک با بررسی وضعیت بازی و افزودن گلوله‌های تولیدشده به فهرست.
+    # Executes shooting after checking the game state and adds the generated bullets to the collection.
     def _handle_shoot(self) -> None:
         if self.game_over_pending or self.paused_internal:
             return
@@ -195,12 +210,13 @@ class GameplayScene(Scene):
         if bullets:
             self.camera.shake(2.0)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  به‌روزرسانی
-    # ─────────────────────────────────────────────────────────────────────
 
+    # حلقه‌ی اصلی به‌روزرسانی منطق بازی در هر فریم.
+    # Main per-frame update loop for the game's logic.
     def update(self, dt: float) -> None:
         # ---- زمان‌بندی و مکث‌ها ----
+        # مدیریت مکث پیش از پایان بازی و به‌روزرسانی اجزای بصری در این بازه.
+        # Handles the delay before the game ends and updates visual systems during this interval.
         if self.game_over_pending:
             self.game_over_timer -= dt
             if self.game_over_timer <= 0.0:
@@ -212,10 +228,14 @@ class GameplayScene(Scene):
             return
 
         # ---- ورودی پیوسته: شلیک با نگه‌داشتن Space ----
+        # بررسی ورودی پیوسته برای امکان شلیک تا زمانی که کلید مربوطه نگه داشته شده است.
+        # Checks continuous input to allow shooting while the corresponding key remains held.
         if self.any_held(S.Keys.SHOOT):
             self._handle_shoot()
 
         # ---- به‌روزرسانی موجودیت‌ها ----
+        # به‌روزرسانی وضعیت و حرکت سفینه، گلوله‌ها، دشمن‌ها و پاورآپ‌ها.
+        # Updates the state and movement of the player, bullets, enemies, and power-ups.
         self.player.update(dt)
 
         for b in self.bullets:
@@ -226,12 +246,16 @@ class GameplayScene(Scene):
             p.update(dt)
 
         # ---- برخوردها ----
+        # بررسی برخورد میان گلوله‌ها، دشمن‌ها، بازیکن و پاورآپ‌ها.
+        # Checks collisions between bullets, enemies, the player, and power-ups.
         self.collision.process_bullets_vs_enemies(self.bullets, self.enemies)
         self.collision.process_bullets_vs_player(self.bullets, self.player)
         self.collision.process_enemies_vs_player(self.enemies, self.player)
         self.collision.process_powerups_vs_player(self.powerups, self.player)
 
         # ---- پردازش رویدادهای برخورد ----
+        # دریافت رویدادهای ثبت‌شده‌ی برخورد و نمایش بازخورد مربوط به نابودی دشمن.
+        # Processes recorded collision events and displays feedback for defeated enemies.
         for ev in self.collision.drain_events():
             if ev.kind == "bullet_enemy":
                 # نمایش امتیاز شناور فقط اگر دشمن مرده باشد
@@ -243,28 +267,40 @@ class GameplayScene(Scene):
                     )
 
         # ---- پاک‌سازی موجودیت‌های مرده ----
+        # حذف موجودیت‌هایی که دیگر زنده نیستند از فهرست‌های فعال بازی.
+        # Removes entities that are no longer alive from the active game collections.
         self.bullets  = [b for b in self.bullets  if b.alive]
         self.enemies  = [e for e in self.enemies  if e.alive]
         self.powerups = [p for p in self.powerups if p.alive]
 
         # ---- Spawner ----
+        # مدیریت تولید دشمن‌ها و موج‌ها بر اساس تعداد دشمن‌های زنده‌ی فعلی.
+        # Manages enemy spawning and wave progression based on the current number of living enemies.
         self.spawner.update(dt, alive_enemies=len(self.enemies))
 
         # ---- ستاره‌ها، ذرات، دوربین ----
+        # به‌روزرسانی جلوه‌های پس‌زمینه، سیستم ذرات و حرکت دوربین.
+        # Updates background effects, the particle system, and camera movement.
         self._update_stars(dt)
         self.particles.update(dt)
         self.camera.update(dt)
 
         # ---- HUD ----
+        # همگام‌سازی اطلاعات نمایشگر وضعیت با مقادیر فعلی بازی و بازیکن.
+        # Synchronizes the HUD with the current game and player state.
         self.hud.set_score(self.score)
         self.hud.set_wave(self.spawner.current_wave)
         self.hud.set_hp(self.player.hp, self.player.MAX_HP)
 
+        # محاسبه‌ی مدت‌زمان مؤثر پاورآپ‌ها با درنظرگرفتن ضریب اختصاصی سفینه.
+        # Calculates the effective power-up duration while accounting for the ship's specific multiplier.
         p_dur = S.PowerupCfg.DURATION
         if hasattr(self.player, "POWERUP_MULTIPLIER"):
             p_dur *= self.player.POWERUP_MULTIPLIER
         rf_dur = p_dur  # rapid_fire و powerup هر دو از همون multiplier استفاده می‌کنن
 
+        # نمایش نوار وضعیت بر اساس پاورآپ فعال و زمان باقی‌مانده‌ی آن.
+        # Displays the power-up bar according to the active effect and its remaining duration.
         if self.player.powerup_time > 0:
             ratio = min(1.0, self.player.powerup_time / p_dur)
             bar_color = S.Palette.POWERUP_CORE
@@ -284,14 +320,15 @@ class GameplayScene(Scene):
         self.hud.update(dt)
 
         # ---- بررسی Game Over ----
+        # تشخیص پایان بازی بر اساس صفرشدن جان بازیکن و غیرفعال‌شدن سفینه.
+        # Detects game over when the player's health reaches zero and the ship is no longer alive.
         if self.player.hp <= 0 and self.player.alive is False:
             if not self.game_over_pending:
                 self._begin_game_over()
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  رسم
-    # ─────────────────────────────────────────────────────────────────────
 
+    # رسم لایه‌های مختلف صحنه‌ی بازی و ترکیب آن‌ها با خروجی دوربین و HUD.
+    # Draws the different game scene layers and composites them with the camera output and HUD.
     def draw(self, surface: pygame.Surface) -> None:
         # ---- رسم روی سطح دنیا ----
         # همه‌ی موجودیت‌ها را روی یه سطح می‌کشیم تا دوربین راحت اعمال شود
@@ -321,6 +358,8 @@ class GameplayScene(Scene):
             self.player.draw(world)
 
         # ---- اعمال دوربین (offset) ----
+        # انتقال سطح دنیا بر اساس جابه‌جایی دوربین، بدون تغییر مختصات HUD.
+        # Applies the camera offset to the world surface without shifting the HUD coordinates.
         ox, oy = self.camera.offset
         surface.fill(S.Palette.BG_DEEP)
         surface.blit(world, (int(ox), int(oy)))
@@ -333,6 +372,8 @@ class GameplayScene(Scene):
 
         # ---- پاورآپ‌های آماده‌ی صفحه‌ی بازی ----
         # (نشانگر «Press P to Pause» فقط برای چند ثانیه‌ی اول)
+        # نمایش راهنمای کنترل‌ها در ابتدای بازی.
+        # Displays the control hints during the initial moments of gameplay.
         if self.time < 20.0:
             img = self.font_hud_small.render(
                 "WASD/Arrows - move    |    SPACE - shoot    |    P - pause    |    F11 - fullscreen    |    ALT+TAB - minimize    |  ESC - quit    " ,
@@ -342,20 +383,20 @@ class GameplayScene(Scene):
             surface.blit(img, rect)
 
         # ---- نوار HP باس ----
+        # رسم نوار سلامت باس‌های فعال در بالای صفحه.
+        # Draws the health bars of active bosses near the top of the screen.
         self._draw_boss_health_bar(surface)
 
         # ---- دیباگ هیت‌باکس ----
+        # نمایش محدوده‌ی برخورد موجودیت‌ها در صورت فعال‌بودن تنظیم دیباگ.
+        # Displays entity collision boundaries when hitbox debugging is enabled.
         if S.Debug.SHOW_HITBOX:
             self.collision.draw_debug(surface, [self.player] + self.enemies + self.bullets)
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  ═══════════  API عمومی برای موجودیت‌ها و سیستم‌ها  ═══════════
-    # ─────────────────────────────────────────────────────────────────────
-    #  این متدها توسط Player، Enemy، Bullet، Powerup و Spawner صدا زده
-    #  می‌شوند. همه‌ی آن‌ها Safety-First هستند: اگر چیزی نبود، کرش نمی‌کنند.
-    # ─────────────────────────────────────────────────────────────────────
 
     # ---- افزودن موجودیت‌ها ----
+    # متدهای عمومی برای اضافه‌کردن موجودیت‌ها به فهرست‌های صحنه.
+    # Public methods for adding entities to the scene collections.
 
     def add_enemy(self, enemy: Enemy) -> None:
         """یک دشمن به لیست اضافه می‌کند."""
@@ -368,6 +409,8 @@ class GameplayScene(Scene):
         self.powerups.append(powerup)
 
     # ---- Spawn اختصاصی (با امضاهای Player/Enemy/Bullet) ----
+    # متدهای تولید و ثبت گلوله‌ها و جلوه‌های بصری مورد استفاده‌ی موجودیت‌ها.
+    # Methods for spawning and registering bullets and visual effects used by game entities.
 
     def spawn_bullet(self, bullet: Bullet) -> None:
         """Bullet در جای خودش ثبت می‌شود (برای Enemy._do_shoot)."""
@@ -412,6 +455,8 @@ class GameplayScene(Scene):
         """انفجار برداشتن پاورآپ."""
         self.particles.preset_powerup_burst(x, y, color)
 
+    # ساخت پاورآپ با امکان تعیین نوع و جلوگیری از تولید BOMB هنگام مبارزه با باس.
+    # Spawns a power-up with an optional type and prevents BOMB drops during boss fights.
     def spawn_powerup(
         self, x: float, y: float, kind: Optional[PowerupKind] = None,
     ) -> None:
@@ -432,12 +477,16 @@ class GameplayScene(Scene):
             pass
 
     # ---- Score ----
+    # افزایش امتیاز بازی با جلوگیری از اضافه‌شدن مقادیر منفی.
+    # Updates the game score while preventing negative amounts from being added.
 
     def add_score(self, amount: int) -> None:
         """افزودن امتیاز (توسط Enemy.on_death صدا زده می‌شود)."""
         self.score += max(0, int(amount))
 
     # ---- رویدادهای خاص ----
+    # مدیریت رویدادهای ویژه‌ی بازی و جلوه‌های مرتبط با آن‌ها.
+    # Handles special gameplay events and their associated effects.
 
     def trigger_screen_bomb(self, x: float, y: float) -> None:
         """
@@ -449,6 +498,8 @@ class GameplayScene(Scene):
         self.camera.shake(S.FxCfg.SHAKE_ON_BOSS_KILL, aftershock=2)
 
         # نابود کردن دشمن‌ها (باس‌ها در امان)
+        # حذف دشمن‌های عادی، ثبت امتیاز و ایجاد انفجار؛ باس‌ها از این اثر مستثنا هستند.
+        # Removes regular enemies, awards score, and creates explosions while excluding bosses.
         from entities.enemies.boss_base import BossBase
         for enemy in list(self.enemies):
             if not enemy.alive:
@@ -468,6 +519,8 @@ class GameplayScene(Scene):
             enemy._pending_kill = True
 
         # پاک‌سازی گلوله‌های دشمن
+        # غیرفعال‌کردن گلوله‌های متعلق به دشمن‌ها پس از فعال‌شدن بمب.
+        # Deactivates enemy-owned bullets after the bomb is triggered.
         for b in self.bullets:
             if not b.friendly:
                 b.alive = False
@@ -475,10 +528,9 @@ class GameplayScene(Scene):
         if self.audio:
             self.audio.play("player_explode")  # صدای بم
 
-    # ─────────────────────────────────────────────────────────────────────
-    #  Pause / Game Over
-    # ─────────────────────────────────────────────────────────────────────
 
+    # مدیریت مکث بازی با قراردادن صحنه‌ی Pause روی Gameplay.
+    # Pauses gameplay by pushing the Pause scene onto the scene stack.
     def _push_pause(self) -> None:
         """باز کردن منوی Pause روی همین صحنه."""
         if self.game_over_pending:
@@ -489,17 +541,23 @@ class GameplayScene(Scene):
         # push روی Gameplay — بعد از pop، خودکار resume می‌شه
         self.game.scenes.push(S.SceneName.PAUSE.value)
 
+    # ازسرگیری وضعیت Gameplay و موسیقی پس از بازگشت از صحنه‌ی Pause.
+    # Resumes gameplay and its music after returning from the Pause scene.
     def on_resume(self) -> None:
         """وقتی از Pause برگشتیم."""
         self.paused_internal = False
         if self.audio:
             self.audio.resume_music()
 
+    # آغاز فرایند پایان بازی و تعیین مدت مکث برای نمایش انفجار سفینه.
+    # Starts the game-over sequence and sets the delay for displaying the player explosion.
     def _begin_game_over(self) -> None:
         """شروع مکث کوتاه قبل از رفتن به صفحه‌ی Game Over."""
         self.game_over_pending = True
         self.game_over_timer = 1.6  # ثانیه نمایش انفجار پلیر
 
+    # انتقال به صحنه‌ی Game Over همراه با ذخیره‌ی امتیاز و شماره‌ی موج نهایی.
+    # Transitions to the Game Over scene while storing the final score and wave number.
     def _go_to_gameover(self) -> None:
         """رفتن به صفحه‌ی Game Over با پاس دادن آمار."""
         # ذخیره‌ی آمار در Game تا GameOverScene بخواند
@@ -513,21 +571,25 @@ class GameplayScene(Scene):
         self.go_to(S.SceneName.GAME_OVER.value)
 
 
+    # بازگشت فوری به منوی اصلی و توقف تدریجی موسیقی مبارزه.
+    # Immediately returns to the main menu and gradually fades out the battle music.
     def _go_to_menu(self) -> None:
         """بازگشت فوری به منوی اصلی."""
         if self.audio:
             self.audio.stop_music(fade_ms=300)
         self.go_to(S.SceneName.MENU.value)
-        
-    # ─────────────────────────────────────────────────────────────────────
-    #  باس فایت
-    # ─────────────────────────────────────────────────────────────────────
 
+
+
+    # دریافت فهرست باس‌هایی که هنوز زنده هستند.
+    # Retrieves the collection of bosses that are still alive.
     def _get_bosses(self) -> list:
         """همه‌ی باس‌های زنده."""
         from entities.enemies.boss_base import BossBase
         return [e for e in self.enemies if isinstance(e, BossBase) and e.alive]
 
+    # ثبت رویداد شکست باس و نمایش پیام پیروزی در مرکز صفحه.
+    # Handles a boss defeat event and displays a victory message at the center of the screen.
     def on_boss_defeated(self) -> None:
         """وقتی باس کشته شد."""
         self.boss_defeated_timer = 2.5  # پیام پیروزی
@@ -542,6 +604,8 @@ class GameplayScene(Scene):
         except Exception:
             pass
 
+    # رسم نوار سلامت باس‌های زنده با رنگ‌بندی متناسب با میزان HP باقی‌مانده.
+    # Draws health bars for living bosses with colors based on their remaining HP.
     def _draw_boss_health_bar(self, surface: pygame.Surface) -> None:
         """نوار HP همه‌ی باس‌ها."""
         bosses = self._get_bosses()
@@ -552,6 +616,8 @@ class GameplayScene(Scene):
         bar_w = S.Window.WIDTH - 200
         x = 100
 
+        # تنظیم ارتفاع، فاصله و موقعیت نوارها بر اساس تعداد باس‌های فعال.
+        # Adjusts bar height, spacing, and vertical position according to the number of active bosses.
         if n == 1:
             bar_h, gap, top = 22, 0, 70
         else:
@@ -564,6 +630,8 @@ class GameplayScene(Scene):
             y = top + i * (bar_h + gap)
             ratio = max(0.0, boss.hp / boss.max_hp)
 
+            # انتخاب رنگ نوار بر اساس نسبت HP باقی‌مانده.
+            # Selects the health bar color based on the remaining HP ratio.
             # رنگ
             if ratio > 0.5:
                 color = (255, 60, 60)
@@ -576,11 +644,15 @@ class GameplayScene(Scene):
                 dark_c = (150, 30, 150)
 
             # ---- پس‌زمینه ----
+            # رسم پس‌زمینه‌ی نیمه‌شفاف زیر نوار سلامت.
+            # Draws a translucent background beneath the health bar.
             bg = pygame.Surface((bar_w + 4, bar_h + 4), pygame.SRCALPHA)
             bg.fill((5, 5, 15, 220))
             surface.blit(bg, (x - 2, y - 2))
 
             # ---- پر شده ----
+            # محاسبه‌ی طول بخش پرشده و ایجاد گرادیان رنگی در امتداد نوار.
+            # Calculates the filled bar width and creates a color gradient across it.
             filled = int(bar_w * ratio)
             if filled > 0:
                 bsurf = pygame.Surface((filled, bar_h), pygame.SRCALPHA)
@@ -593,9 +665,13 @@ class GameplayScene(Scene):
                 surface.blit(bsurf, (x, y))
 
             # ---- حاشیه ----
+            # رسم حاشیه‌ی نوار سلامت با رنگ وضعیت فعلی باس.
+            # Draws the health bar border using the boss's current status color.
             pygame.draw.rect(surface, color, (x, y, bar_w, bar_h), 2)
 
             # ---- متن ----
+            # نمایش نام باس و مقدار HP فعلی در مرکز نوار.
+            # Displays the boss name and current HP value at the center of the bar.
             name = getattr(boss, "boss_name", "BOSS")
             label = f"{name}   {boss.hp} / {boss.max_hp}"
             text = font.render(label, True, (255, 240, 255))
