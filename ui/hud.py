@@ -497,7 +497,7 @@ class HUD:
                 alpha = int(255 * (1.0 - t))
                 self._draw_heart(
                     surface, cx, cy, int(size * scale * 0.5),
-                    (*S.Palette.HUD_HP, alpha), filled=True, glowed=True,
+                    (*S.Palette.HUD_HP, alpha), filled=True,
                 )
             elif h.filled:
                 # هنگام بازیابی جان، افزایش مقیاس به‌صورت موقت روی اندازه‌ی عادی اعمال می‌شود.
@@ -505,14 +505,14 @@ class HUD:
                 scale = pulse * (1.0 + (h.pop_t * 0.4 if 0.0 < h.pop_t < 1.0 else 0.0))
                 self._draw_heart(
                     surface, cx, cy, int(size * 0.5 * scale),
-                    S.Palette.HUD_HP, filled=True, glowed=True,
+                    S.Palette.HUD_HP, filled=True,
                 )
             else:
                 # قلب خالی — فقط خط دور
                 # Empty heart — outline only
                 self._draw_heart(
                     surface, cx, cy, int(size * 0.5),
-                    (60, 30, 30), filled=False, glowed=False,
+                    (60, 30, 30), filled=False,
                 )
 
     def _draw_heart(
@@ -523,7 +523,6 @@ class HUD:
         color: tuple[int, int, int] | tuple[int, int, int, int],
         *,
         filled: bool,
-        glowed: bool,
     ) -> None:
         """رسم یک قلب از دو دایره + یک مثلث."""
         # اگر color آلفا دارد، روی سطح موقت بکش
@@ -764,24 +763,6 @@ class HUD:
         bg.fill((0, 0, 0, 120))
         surface.blit(bg, (rect.x - 4, rect.y - 2))
         surface.blit(img, rect)
-
-
-    def _draw_text_glow(
-        self,
-        surface: pygame.Surface,
-        text: str,
-        font: pygame.font.Font,
-        pos: tuple[int, int],
-        color: tuple[int, int, int],
-        *,
-        glow: int = 1,
-    ) -> None:
-        # متن در چهار جهت اطراف موقعیت اصلی رسم می‌شود تا جلوه‌ی درخشش ایجاد شود.
-        # Draws the text in four directions around its original position to create a glow effect.
-        base = font.render(text, True, color)
-        for dx, dy in ((-glow, 0), (glow, 0), (0, -glow), (0, glow)):
-            surface.blit(base, (pos[0] + dx, pos[1] + dy), special_flags=pygame.BLEND_RGBA_ADD)
-
 
     def reset(self) -> None:
         """بازنشانی کامل برای شروع بازی جدید."""
