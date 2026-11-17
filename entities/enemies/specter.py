@@ -40,7 +40,7 @@ class SpecterEnemy(Enemy):
         # ذرات orbit
         # چهار زاویه‌ی ثابت برای قرارگیری ذرات چرخان اطراف شبح تعیین می‌شوند.
         # Defines four fixed angles for positioning particles orbiting the ghost.
-        self._orbits = [random.uniform(0, math.tau) for _ in range(4)] if False else [i * math.tau / 4 for i in range(4)]
+        self._orbits = [i * math.tau / 4 for i in range(4)]
 
     def update_ai(self, dt: float) -> None:
         # حرکت عمودی شبح و زمان سپری‌شده در فاز فعلی را به‌روزرسانی می‌کند.
